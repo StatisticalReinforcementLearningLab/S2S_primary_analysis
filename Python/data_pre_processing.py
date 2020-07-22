@@ -1,7 +1,7 @@
 
 # Sense2Stop Data Pre-processing
 
-# Last modified: 18 APR 2020
+# Last modified: 22 JUN 2020
 
 # import necessary modules:
 import pandas as pd
@@ -25,7 +25,7 @@ def intervention(row):
     val = np.where((row['operation'] == 'EMI_INFO') and (row['isStress'] == True), 'class_stress', # available_stress
             np.where((row['operation'] == 'EMI_INFO') and (row['isStress'] == False), 'class_notStress', # available_notStress
               np.where((row['id'] == 'EMI') and (row['status'] == 'DELIVERED'), 'delivered', 'other'))) # delivered, other.
-    return val
+    return val    
 
 def minute_rounder(t):
     # Rounds to nearest minute by adding a timedelta minute if seconds >= 30
@@ -207,6 +207,87 @@ for id in all_participant_ids:
 
 activity = activity.drop_duplicates().reset_index(drop=True)
 
+# Create data frame with quality ecg info:
+quality_ecg_alternative = pd.read_csv(wd + '/' + "cstress_data_ecg_quality_alternative.csv")
+uq_ids_quality_ecg_alternative = list(quality_ecg_alternative.participant_id.unique())
+quality_ecg_backup = pd.read_csv(wd + '/' + "cstress_data_ecg_quality_backup.csv")
+uq_ids_quality_ecg_backup = list(quality_ecg_backup.participant_id.unique())
+quality_ecg_original = pd.read_csv(wd + '/' + "cstress_data_ecg_quality_original.csv")
+uq_ids_quality_ecg_original = list(quality_ecg_original.participant_id.unique())
+
+quality_ecg = pd.DataFrame(columns = ['datetime', 'timestamp', 'event', 'participant_id'])
+for id in all_participant_ids:
+    if id in uq_ids_quality_ecg_backup:
+        data_to_append = pd.DataFrame(columns = ['timestamp', 'event', 'participant_id'])
+        data = quality_ecg_backup[quality_ecg_backup['participant_id'] == id]
+        data_to_append['timestamp'] = data['timestamp']
+        data_to_append['datetime'] = [date_time(i) for i in data['timestamp']]
+        data_to_append['date'] = [i.date() for i in data_to_append['datetime']]
+        data_to_append['event'] = data['event']
+        data_to_append['participant_id'] = data['participant_id']
+        quality_ecg = quality_ecg.append(data_to_append)
+    elif id in uq_ids_quality_ecg_original:
+        data_to_append = pd.DataFrame(columns = ['timestamp', 'event', 'participant_id'])
+        data = quality_ecg_original[quality_ecg_original['participant_id'] == id]
+        data_to_append['timestamp'] = data['timestamp']
+        data_to_append['datetime'] = [date_time(i) for i in data['timestamp']]
+        data_to_append['date'] = [i.date() for i in data_to_append['datetime']]
+        data_to_append['event'] = data['event']
+        data_to_append['participant_id'] = data['participant_id']
+        quality_ecg = quality_ecg.append(data_to_append)
+    elif id in uq_ids_quality_ecg_alternative:
+        data_to_append = pd.DataFrame(columns = ['timestamp', 'event', 'participant_id'])
+        data = quality_ecg_alternative[quality_ecg_alternative['participant_id'] == id]
+        data_to_append['timestamp'] = data['timestamp']
+        data_to_append['datetime'] = [date_time(i) for i in data['timestamp']]
+        data_to_append['date'] = [i.date() for i in data_to_append['datetime']]
+        data_to_append['event'] = data['event']
+        data_to_append['participant_id'] = data['participant_id']
+        quality_ecg = quality_ecg.append(data_to_append)
+
+quality_ecg = quality_ecg.drop_duplicates().reset_index(drop=True)
+
+# Create data frame with quality rep info:
+quality_rep_alternative = pd.read_csv(wd + '/' + "cstress_data_rep_quality_alternative.csv")
+uq_ids_quality_rep_alternative = list(quality_rep_alternative.participant_id.unique())
+quality_rep_backup = pd.read_csv(wd + '/' + "cstress_data_rep_quality_backup.csv")
+uq_ids_quality_rep_backup = list(quality_rep_backup.participant_id.unique())
+quality_rep_original = pd.read_csv(wd + '/' + "cstress_data_rep_quality_original.csv")
+uq_ids_quality_rep_original = list(quality_rep_original.participant_id.unique())
+
+quality_rep = pd.DataFrame(columns = ['datetime', 'timestamp', 'event', 'participant_id'])
+for id in all_participant_ids:
+    if id in uq_ids_quality_rep_backup:
+        data_to_append = pd.DataFrame(columns = ['timestamp', 'event', 'participant_id'])
+        data = quality_rep_backup[quality_rep_backup['participant_id'] == id]
+        data_to_append['timestamp'] = data['timestamp']
+        data_to_append['datetime'] = [date_time(i) for i in data['timestamp']]
+        data_to_append['date'] = [i.date() for i in data_to_append['datetime']]
+        data_to_append['event'] = data['event']
+        data_to_append['participant_id'] = data['participant_id']
+        quality_rep = quality_rep.append(data_to_append)
+    elif id in uq_ids_quality_rep_original:
+        data_to_append = pd.DataFrame(columns = ['timestamp', 'event', 'participant_id'])
+        data = quality_rep_original[quality_rep_original['participant_id'] == id]
+        data_to_append['timestamp'] = data['timestamp']
+        data_to_append['datetime'] = [date_time(i) for i in data['timestamp']]
+        data_to_append['date'] = [i.date() for i in data_to_append['datetime']]
+        data_to_append['event'] = data['event']
+        data_to_append['participant_id'] = data['participant_id']
+        quality_rep = quality_rep.append(data_to_append)
+    elif id in uq_ids_quality_rep_alternative:
+        data_to_append = pd.DataFrame(columns = ['timestamp', 'event', 'participant_id'])
+        data = quality_rep_alternative[quality_rep_alternative['participant_id'] == id]
+        data_to_append['timestamp'] = data['timestamp']
+        data_to_append['datetime'] = [date_time(i) for i in data['timestamp']]
+        data_to_append['date'] = [i.date() for i in data_to_append['datetime']]
+        data_to_append['event'] = data['event']
+        data_to_append['participant_id'] = data['participant_id']
+        quality_rep = quality_rep.append(data_to_append)
+
+quality_rep = quality_rep.drop_duplicates().reset_index(drop=True)
+
+
 # Episode data:
 full_ep_times_original = pd.read_csv(wd + '/' + "classification_full_episode_original.csv")
 uq_ids_ep_times_original = list(full_ep_times_original.participant_id.unique())
@@ -264,24 +345,34 @@ for id in all_participant_ids:
 # Convert columns with strings of dictionaries to columns and values (this is needed for
 # 'emiInfo' and 'logScheduler'):
 logs = {}
-for id in all_participant_ids:
-    name = 'phone_log_' + str(id)
+for idVal in all_participant_ids:
+    print(idVal)
+    name = 'phone_log_' + str(idVal)
     df = logs_w_dicts[name]
+    df['time_stamp'] = df['timestamp']
+    # del df['timestamp']
     # convert string of dictionaries to dictionaries for columns 'emiInfo' and 'logScheduler':
     # NB: 'd==d' checks that values are not nan.
     if 'emiInfo' in df.columns:
-        df['emiInfo'] = [ast.literal_eval(d) if d == d else np.NaN for d in df['emiInfo']]
+        # df['emiInfo'] = [ast.literal_eval(d) if d == d else np.NaN for d in df['emiInfo']]
+        df['emiInfo'] = [ast.literal_eval(d) if isinstance(d, str) else d for d in df['emiInfo']]
         # df['emiInfo'] = [d if d == d else np.NaN for d in df['emiInfo']]
         # Add keys as columns and values as cells in columns to original data frame:
         df = pd.concat([df.drop(['emiInfo'], axis=1), df['emiInfo'].apply(pd.Series)], axis=1)
+        # remove second timestamp column: 
+        del df['timestamp']
         # delete redundant '0' columns created by pd.Series:
         del df[0]
     if 'logScheduler' in df.columns:
         df['logSchedule'] = [ast.literal_eval(d) if d == d else np.NaN for d in df['logSchedule']]
         df = pd.concat([df.drop(['logSchedule'], axis=1), df['logSchedule'].apply(pd.Series)], axis=1)
+        # remove second timestamp column:
+        del df['timestamp']
+        # delete redundant '0' columns created by pd.Series:
         del df[0]
     # make datetime object:
-    df['date_time'] = [datetime.strptime(i, '%Y/%m/%d %H:%M:%S %p') for i in df['current_time']]
+    # df['date_time'] = [datetime.strptime(i, '%Y/%m/%d %H:%M:%S %p') for i in df['current_time']]
+    df['date_time'] = [date_time(i) for i in df['time_stamp']]
     df['date'] = [i.date() for i in df['date_time']]
     logs[name] = df
 
@@ -345,24 +436,21 @@ mrt_start_day[269] = (datetime(year = 2019, month = 6, day = 28) + timedelta(day
 
 participants_for_analysis = list(mrt_start_day.keys())
 
-# Create dataset for predicting missing minutes:
+# What fraction of all available decision times is a user classified as being in the 
+# unknown episode category?
 
-# predict_missing_columns = ['id', 'day', 'available_decision_time', 'episode_type',
-#     'previous_episode_type', 'length_of_episode', 'length_of_previous_episode',
-#     'prop_good_data', 'prop_good_data_previous_episode']
-# predict_missing_df = pd.DataFrame(columns = predict_missing_columns)
-
-predict_missing_df = pd.DataFrame()
 indexVal = 0
+avai_dec_time_stress_classes = pd.DataFrame()
 for idVal in participants_for_analysis:
+    print("  id: ", idVal)
     key_name = 'phone_log_' + str(idVal)
     mrt_id_start_day = mrt_start_day[idVal]
     mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
     id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
     id_episodes = episodes[episodes['participant_id'] == idVal]
     day = mrt_id_start_day
-    day_num = 1
     while day <=  mrt_id_tenth_day:
+        print("  day: ", day)
         id_episodes_day = id_episodes[id_episodes['date'] == day]
         id_log_EMI_day = id_log_EMI[id_log_EMI['date'] == day]
         int_triggered_condition = id_log_EMI_day['isTriggered'] == True
@@ -370,183 +458,714 @@ for idVal in participants_for_analysis:
         available_dec_ponts = id_log_EMI_day[(int_triggered_condition) | (int_not_triggered_condition)]
         if available_dec_ponts.shape[0] > 0:
             available_decision_times = list(available_dec_ponts['date_time'])
-            for avai_dec_time in available_decision_times:
+            avai_dec_time_stress_class = list(available_dec_ponts['isStress'])
+            for avai_dec_time, avai_dec_time_class in zip(available_decision_times, avai_dec_time_stress_class):
+                # find current stress classification from cStress episode classification data file to make 
+                # sure that this matches what the log files indicate: 
+                curr_episode = id_episodes_day[(id_episodes_day['datetime_end'] >= avai_dec_time) & (id_episodes_day['datetime_start'] <= avai_dec_time)]
+                if curr_episode.shape[0] == 0: 
+                    print("WARNING: id ", idVal, " for available decision time ", avai_dec_time, "has no classification for this current episode!!!!!!")
+                    ep_class = 'does_not_exist'
+                elif curr_episode.shape[0] > 0:
+                    if curr_episode.iloc[0].event == 3.0: 
+                        ep_class = "unknown"
+                    elif curr_episode.iloc[0].event == 2.0: 
+                        ep_class = "stress"
+                    elif curr_episode.iloc[0].event == 0.0:
+                        ep_class = "no_stress"
+                rows_to_append = pd.DataFrame({
+                                'id': idVal,
+                                'day': day,
+                                'available_decision_point': avai_dec_time,
+                                'rand_alg_is_stress': avai_dec_time_class, 
+                                'episode_class': ep_class}, index=[indexVal])
+                indexVal = indexVal + 1
+                avai_dec_time_stress_classes = avai_dec_time_stress_classes.append(rows_to_append)
+        day = day + timedelta(days=1)
+
+# Create row counts in table provided in email to Tim, Soujanya, Shahin and Susan:
+
+isStressTrue = list(avai_dec_time_stress_classes['rand_alg_is_stress'] == True)
+isStressFalse = list(
+    avai_dec_time_stress_classes['rand_alg_is_stress'] == False)
+
+EpClassStress = list(avai_dec_time_stress_classes['episode_class'] == 'stress')
+EpClassNoStress = list(
+    avai_dec_time_stress_classes['episode_class'] == 'no_stress')
+EpClassUnknown = list(
+    avai_dec_time_stress_classes['episode_class'] == 'unknown')
+NoEpClass = list(
+    avai_dec_time_stress_classes['episode_class'] == 'does_not_exist')
+
+# using the timestamp from the phone log files:
+
+np.sum([i & j for (i, j) in zip(isStressTrue, EpClassStress)])
+np.sum([i & j for (i, j) in zip(isStressTrue, EpClassNoStress)])
+np.sum([i & j for (i, j) in zip(isStressTrue, EpClassUnknown)])
+np.sum([i & j for (i, j) in zip(isStressTrue, NoEpClass)])
+
+np.sum([i & j for (i, j) in zip(isStressFalse, EpClassStress)])
+np.sum([i & j for (i, j) in zip(isStressFalse, EpClassNoStress)])
+np.sum([i & j for (i, j) in zip(isStressFalse, EpClassUnknown)])
+np.sum([i & j for (i, j) in zip(isStressFalse, NoEpClass)])
+
+# Create a data frame with the following information (VAR REDUC):
+#   for each individual, each day, each available decision time, create the variables:
+#    y1, ..., y120 = each minute's multinomial outcome {detected-stressed, not-detected-stressed, physically-active}.
+#    x1 = the number of minutes stressed in the previous 120 minutes
+#    x2 = the number of minutes physically active in the previous 120 minutes
+#    x3 = the current classificatin of stress or not_stress
+# populate data frame with the first missing episode:
+
+var_reduc_data = pd.DataFrame()
+for idVal in participants_for_analysis:
+    print("  id: ", idVal)
+    key_name = 'phone_log_' + str(idVal)
+    mrt_id_start_day = mrt_start_day[idVal]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
+    id_activity = activity[activity['participant_id'] == idVal]
+    id_episodes = episodes[episodes['participant_id'] == idVal]
+    day = mrt_id_start_day
+    day_num = 1
+    while day <= mrt_id_tenth_day:
+        print("  day: ", day)
+        id_episodes_day = id_episodes[id_episodes['date'] == day]
+        id_log_EMI_day = id_log_EMI[id_log_EMI['date'] == day]
+        id_activity_day = id_activity[id_activity['date'] == day]
+        int_triggered_condition = id_log_EMI_day['isTriggered'] == True
+        int_not_triggered_condition = id_log_EMI_day['isTriggered'] == False
+        available_dec_ponts = id_log_EMI_day[(int_triggered_condition) | (int_not_triggered_condition)]
+        if available_dec_ponts.shape[0] > 0:
+            available_decision_times = list(available_dec_ponts['date_time'])
+            available_dec_time_is_stress_list = list(available_dec_ponts['isStress'])
+            for avai_dec_time, avai_dec_time_is_stress in zip(available_decision_times, available_dec_time_is_stress_list):
                 # variables: day, avai_dec_time,
-                start_time = pd.to_datetime(avai_dec_time).tz_localize('America/Chicago', ambiguous = 'NaT')
-                if start_time == 'NaT':
-                    start_time_localize = pd.to_datetime(avai_dec_time).tz_localize('Europe/London') # this localizes the timestamp.
-                    start_time = pd.to_datetime(start_time_localize).tz_convert('America/Chicago') # this now converts the localized version to chicago timestamp.
+                start_time = avai_dec_time
+                plus_120_min_time = start_time + timedelta(hours = 2)
+                minus_120_min_time = start_time - timedelta(hours = 2)
+                id_episodes_day_2hour_before = id_episodes_day[(id_episodes_day['datetime_end'] >= minus_120_min_time) & (id_episodes_day['datetime_start'] <= start_time)].reset_index(drop=True)
+                id_activity_day_2hour_before = id_activity_day[(id_activity_day['datetime'] >= minus_120_min_time) & (id_activity_day['datetime'] <= start_time)].reset_index(drop=True)
+                id_episodes_day_2hour_after = id_episodes_day[(id_episodes_day['datetime_end'] >= start_time) & (id_episodes_day['datetime_start'] <= plus_120_min_time)].reset_index(drop=True)
+                id_activity_day_2hour_after = id_activity_day[(id_activity_day['datetime'] >= start_time) & (
+                    id_activity_day['datetime'] <= plus_120_min_time)].reset_index(drop=True)
+                # count the number of minutes in the prior 2 hours that are within detected-stressed episode(s):
+                mins_stressed_prior = 0
+                id_stress_eps_2hour_before = id_episodes_day_2hour_before[id_episodes_day_2hour_before['event'] == 2.0].reset_index(
+                    drop=True)
+                if id_stress_eps_2hour_before.shape[0] > 0:
+                    for id, row in id_stress_eps_2hour_before.iterrows():
+                        start_val = np.max([minus_120_min_time, row.datetime_start])
+                        end_val = np.min([start_time, row.datetime_end])
+                        mins_stressed_prior += (minute_rounder(end_val) - minute_rounder(start_val)).seconds//60
+                # count the number of minutes in the prior 2 hours that are within not-detected-stressed episode(s):
+                mins_not_stressed_prior = 0
+                id_not_stress_eps_2hour_before = id_episodes_day_2hour_before[id_episodes_day_2hour_before['event'] == 0.0].reset_index(
+                    drop=True)
+                if id_not_stress_eps_2hour_before.shape[0] > 0:
+                    for id, row in id_not_stress_eps_2hour_before.iterrows():
+                        start_val = np.max([minus_120_min_time, row.datetime_start])
+                        end_val = np.min([start_time, row.datetime_end])
+                        mins_not_stressed_prior += (minute_rounder(end_val) - minute_rounder(start_val)).seconds//60
+                # and the number of minutes in the prior 2 hours that are within physical activity episode(s):
+                mins_active_prior = 0
+                id_unknown_eps_2hour_before = id_episodes_day_2hour_before[id_episodes_day_2hour_before['event'] == 3.0].reset_index(drop=True)
+                id_activity_2hour_before = id_activity_day_2hour_before[id_activity_day_2hour_before['event'] == 1.0].reset_index(
+                    drop=True)
+                if id_unknown_eps_2hour_before.shape[0] > 0:
+                    for index,row in id_unknown_eps_2hour_before.iterrows():
+                        start_of_unknown_ep = row.datetime_start
+                        end_of_unknown_ep = row.datetime_end
+                        num_mins_in_ep = (minute_rounder(end_of_unknown_ep) - minute_rounder(start_of_unknown_ep)).seconds//60
+                        id_activity_curr_episode = id_activity_2hour_before[(id_activity_2hour_before['datetime'] >= start_of_unknown_ep) & (
+                            id_activity_2hour_before['datetime'] <= end_of_unknown_ep)].reset_index(drop=True)
+                        if id_activity_curr_episode.shape[0] >= num_mins_in_ep/2:
+                            mins_active_prior += num_mins_in_ep
+                min_counter = 0
+                start_of_curr_time = start_time
+                for id, row in id_episodes_day_2hour_after.iterrows():
+                    if start_of_curr_time >= plus_120_min_time:
+                        break
+                    ep_consisting_of_min = id_episodes_day_2hour_after[(id_episodes_day_2hour_after['datetime_start'] <= start_of_curr_time) & (
+                        id_episodes_day_2hour_after['datetime_end'] > start_of_curr_time)]
+                    if ep_consisting_of_min.shape[0] == 0:
+                        # If entering this if statement, current episode is missing. 
+                        print("!!! Either no first episode, or missing data !!!")
+                        # find next available episode, if it exists: 
+                        id_plus_one = id + 1
+                        if id_plus_one == id_episodes_day_2hour_after.shape[0]: 
+                            # this means that there is no current episode classification and also no 
+                            # other episode classifications until the end of the 120 minute period: 
+                            start_of_curr_ep = start_of_curr_time
+                            end_of_curr_ep = plus_120_min_time
+                            num_mins_in_ep = (minute_rounder(end_of_curr_ep) - minute_rounder(start_of_curr_ep)).seconds//60
+                            # populate minute and outcome rows:
+                            minute_vals = list(range(min_counter + 1, min_counter + num_mins_in_ep + 1))
+                            outcome_val = "missing"
+                            outcome_vals = [outcome_val] * len(minute_vals)
+                            rows_to_append = pd.DataFrame({
+                                'id': [idVal] * len(minute_vals),
+                                'day': [day] * len(minute_vals),
+                                'daynum': [day_num] * len(minute_vals),
+                                'available_decision_point': [avai_dec_time] * len(minute_vals),
+                                'avai_dec_time_is_stress_vals': [avai_dec_time_is_stress] * len(minute_vals), 
+                                'min_after_dec_point': minute_vals,
+                                'prox_outcome': outcome_vals,
+                                'mins_stressed_prior': [mins_stressed_prior] * len(minute_vals),
+                                'mins_active_prior': [mins_active_prior] * len(minute_vals)})
+                            var_reduc_data = var_reduc_data.append(rows_to_append)
+                            start_of_curr_time = end_of_curr_ep
+                            min_counter += num_mins_in_ep
+                        else: 
+                            next_ep = id_episodes_day_2hour_after.iloc[id_plus_one]
+                            if next_ep.shape[0] > 0: 
+                                start_of_next_ep = next_ep.datetime_start
+                                start_of_curr_ep = start_of_curr_time
+                                end_of_curr_ep = start_of_next_ep
+                                num_mins_in_ep = (minute_rounder(end_of_curr_ep) - minute_rounder(start_of_curr_ep)).seconds//60
+                                # populate minute and outcome rows:
+                                minute_vals = list(range(min_counter + 1, min_counter + num_mins_in_ep + 1))
+                                outcome_val = "missing"
+                                outcome_vals = [outcome_val] * len(minute_vals)
+                                rows_to_append = pd.DataFrame({
+                                    'id': [idVal] * len(minute_vals),
+                                    'day': [day] * len(minute_vals),
+                                    'daynum': [day_num] * len(minute_vals),
+                                    'available_decision_point': [avai_dec_time] * len(minute_vals),
+                                    'avai_dec_time_is_stress_vals': [avai_dec_time_is_stress] * len(minute_vals),
+                                    'min_after_dec_point': minute_vals,
+                                    'prox_outcome': outcome_vals,
+                                    'mins_stressed_prior': [mins_stressed_prior] * len(minute_vals),
+                                    'mins_active_prior': [mins_active_prior] * len(minute_vals)})
+                                var_reduc_data = var_reduc_data.append(rows_to_append)
+                                start_of_curr_time = end_of_curr_ep
+                                min_counter += num_mins_in_ep
+                            else: 
+                                # there is no next episode, so use end time to be the end of the 120 mins: 
+                                # start_of_next_ep = next_ep.iloc[0].datetime_start
+                                start_of_curr_ep = start_of_curr_time
+                                end_of_curr_ep = plus_120_min_time
+                                num_mins_in_ep = (minute_rounder(end_of_curr_ep) - minute_rounder(start_of_curr_ep)).seconds//60
+                                # populate minute and outcome rows:
+                                minute_vals = list(range(min_counter + 1, min_counter + num_mins_in_ep + 1))
+                                outcome_val = "missing"
+                                outcome_vals = [outcome_val] * len(minute_vals)
+                                rows_to_append = pd.DataFrame({
+                                    'id': [idVal] * len(minute_vals),
+                                    'day': [day] * len(minute_vals),
+                                    'daynum': [day_num] * len(minute_vals),
+                                    'available_decision_point': [avai_dec_time] * len(minute_vals),
+                                    'avai_dec_time_is_stress_vals': [avai_dec_time_is_stress] * len(minute_vals),
+                                    'min_after_dec_point': minute_vals,
+                                    'prox_outcome': outcome_vals,
+                                    'mins_stressed_prior': [mins_stressed_prior] * len(minute_vals),
+                                    'mins_active_prior': [mins_active_prior] * len(minute_vals)})
+                                var_reduc_data = var_reduc_data.append(rows_to_append)
+                                start_of_curr_time = end_of_curr_ep
+                                min_counter += num_mins_in_ep
+                    elif ep_consisting_of_min.shape[0] == 1:
+                        start_of_curr_ep = np.max([ep_consisting_of_min.iloc[0].datetime_start, start_of_curr_time])
+                        end_of_curr_ep = np.min([plus_120_min_time, ep_consisting_of_min.iloc[0].datetime_end])
+                        num_mins_in_ep = (minute_rounder(end_of_curr_ep) - minute_rounder(start_of_curr_ep)).seconds//60
+                        # populate minute and outcome rows:
+                        minute_vals = list(range(min_counter + 1, min_counter + num_mins_in_ep + 1))
+                        if ep_consisting_of_min.iloc[0].event == 2.0:
+                            outcome_val = 'detected-stressed'
+                        elif ep_consisting_of_min.iloc[0].event == 0.0:
+                            outcome_val = 'not-detected-stressed'
+                        elif ep_consisting_of_min.iloc[0].event == 3.0:
+                            active_mins_df = id_activity_day_2hour_after[id_activity_day_2hour_after['event'] == 1.0]
+                            id_activity_curr_episode = active_mins_df[(
+                                active_mins_df['datetime'] >= start_of_curr_ep) & (active_mins_df['datetime'] <= end_of_curr_ep)]
+                            if id_activity_curr_episode.shape[0] >= num_mins_in_ep/2:
+                                # this unknown ep is due to activity:
+                                outcome_val = "physically_active"
+                            else:
+                                outcome_val = "missing"
+                        outcome_vals = [outcome_val] * len(minute_vals)
+                        rows_to_append = pd.DataFrame({
+                            'id': [idVal] * len(minute_vals),
+                            'day': [day] * len(minute_vals),
+                            'daynum': [day_num] * len(minute_vals),
+                            'available_decision_point': [avai_dec_time] * len(minute_vals),
+                            'avai_dec_time_is_stress_vals': [avai_dec_time_is_stress] * len(minute_vals),
+                            'min_after_dec_point': minute_vals,
+                            'prox_outcome': outcome_vals,
+                            'mins_stressed_prior': [mins_stressed_prior] * len(minute_vals),
+                            'mins_active_prior': [mins_active_prior] * len(minute_vals)})
+                        var_reduc_data = var_reduc_data.append(rows_to_append)
+                        start_of_curr_time = ep_consisting_of_min.iloc[0].datetime_end
+                        min_counter += num_mins_in_ep
+        day = day + timedelta(days=1)
+        day_num = day_num + 1
+
+# export dataset:
+var_reduc_data.to_csv('var_reduc_data_df.csv')
+
+var_reduc_data2 = pd.read_csv("var_reduc_data_df.csv") 
+
+# Create dictionary that records for each id, for each day from day 0 to day 9:
+# - proportion good qual data previous day
+# - proportion good phone battery previous day
+# - proportion data available previous day
+# - proportion physical activity previous day
+
+bad_qual_ecg_props = {}
+bad_qual_rep_props = {}
+activity_props = {}
+for id in participants_for_analysis:
+    # start on the day before the first mrt day:
+    qual_id_start_day = mrt_start_day[id] - timedelta(days=1)
+    qual_id_tenth_day = qual_id_start_day + timedelta(days=9)
+    id_qual_ecg_full = quality_ecg[quality_ecg['participant_id'] == id]
+    id_qual_ecg_mrt = id_qual_ecg_full[(id_qual_ecg_full['date'] >= qual_id_start_day) & (id_qual_ecg_full['date'] <= qual_id_tenth_day)]
+    id_qual_rep_full = quality_rep[quality_rep['participant_id'] == id]
+    id_qual_rep_mrt = id_qual_rep_full[(id_qual_rep_full['date'] >= qual_id_start_day) & (id_qual_rep_full['date'] <= qual_id_tenth_day)]
+    id_activity_full = activity[activity['participant_id'] == id]
+    id_activity_mrt = id_activity_full[(id_activity_full['date'] >= qual_id_start_day) & (id_activity_full['date'] <= qual_id_tenth_day)]
+    # Check if participants have given start and end time of days:
+    # day_start_id = day_start[day_start['participant_id'] == id]
+    # day_start_id_mrt = day_start_id[day_start_id['date'] >= mrt_id_start_day]
+    # day_end_id = day_end[day_end['participant_id'] == id]
+    # day_end_id_mrt = day_end_id[day_end_id['date'] >= mrt_id_start_day]
+    #
+    day = qual_id_start_day
+    bad_qual_ecg_props[id] = []
+    bad_qual_rep_props[id] = []
+    activity_props[id] = []
+    print(id)
+    print("")
+    while day <=  qual_id_tenth_day:
+        id_qual_ecg_mrt_day = id_qual_ecg_mrt[id_qual_ecg_mrt['date'] == day].reset_index(drop=True)
+        num_rows_ecg = id_qual_ecg_mrt_day.shape[0]
+        #
+        id_qual_rep_mrt_day = id_qual_rep_mrt[id_qual_rep_mrt['date'] == day].reset_index(drop=True)
+        num_rows_rep = id_qual_rep_mrt_day.shape[0]
+        #
+        id_activity_mrt_day = id_activity_mrt[id_activity_mrt['date'] == day].reset_index(drop=True)
+        num_rows_act = id_activity_mrt_day.shape[0]
+        #
+        # every row is meant to give a qual measure for a 2 second period.
+        # So, num_rows /(60*60) = num hours of day.
+        if num_rows_ecg == 0:
+            string = 'Participant ' + str(id) + ' does not have any ECG Quality information on day ' + str(day_num)
+            print(string)
+            bad_qual_ecg_props[id].append(np.nan)
+        else:
+            prop_bad_qual_ecg = (id_qual_ecg_mrt_day[id_qual_ecg_mrt_day['event'] != 0.0].shape[0])/num_rows_ecg
+            bad_qual_ecg_props[id].append(round(prop_bad_qual_ecg,2))
+        #
+        if num_rows_rep == 0:
+            string = 'Participant ' + str(id) + ' does not have any RIP Quality information on day ' + str(day_num)
+            print(string)
+            bad_qual_rep_props[id].append(np.nan)
+        else:
+            prop_bad_qual_rep = (id_qual_rep_mrt_day[id_qual_rep_mrt_day['event'] != 0.0].shape[0])/num_rows_rep
+            bad_qual_rep_props[id].append(round(prop_bad_qual_rep,2))
+        #
+        if num_rows_act == 0:
+            string = 'Participant ' + str(id) + ' does not have any activity information on day ' + str(day_num)
+            print(string)
+            activity_props[id].append(np.nan)
+        else:
+            prop_act = (id_activity_mrt_day[id_activity_mrt_day['event'] == 1.0].shape[0])/num_rows_act
+            activity_props[id].append(round(prop_act,2))
+        day =  day + timedelta(days=1)
+
+
+#######################################################################################
+# Find fraction:
+# numer = Number of stress & not-stress episodes that resulted in no intervention being
+#         sent that also had interventions sent within the subsequent 2 hour period.
+# denom = Number of stress & not-stress episodes that resulted in no intervention being
+#         sent.
+#######################################################################################
+num_trigs_after_not_trig_dec_time = {}
+for id in participants_for_analysis:
+    print("id: ", id)
+    key_name = 'phone_log_' + str(id)
+    mrt_id_start_day = mrt_start_day[id]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
+    id_activity = activity[activity['participant_id'] == id]
+    id_episodes = episodes[episodes['participant_id'] == id]
+    day = mrt_id_start_day
+    num_trigs_after_not_trig_dec_time[id] = {}
+    while day <=  mrt_id_tenth_day:
+        print("  on day : ", day)
+        num_trigs_after_not_trig_dec_time[id][day] = []
+        id_log_EMI_day = id_log_EMI[id_log_EMI['date'] == day]
+        id_activity_day = id_activity[id_activity['date'] == day]
+        id_episodes_day = id_episodes[id_episodes['date'] == day]
+        int_triggered_condition = id_log_EMI_day['isTriggered'] == True
+        int_not_triggered_condition = id_log_EMI_day['isTriggered'] == False
+        # denom: number of stress and not-stress episodes randomized to no message.
+        not_trig = id_log_EMI_day[int_not_triggered_condition]
+        # numer: number of stress and not-stress episodes randomized to no message for which
+        #        within the following 2 hours a message was delivered to the user.
+        trig = id_log_EMI_day[int_triggered_condition]
+        # trig['date_time_aware'] = [pd.to_datetime(i).tz_localize('America/Chicago', ambiguous = 'NaT') for i in trig['date_time']]
+        if not_trig.shape[0] > 0:
+            not_trig_times = list(not_trig['date_time'])
+            for not_trig_time in not_trig_times:
+                # start_time = pd.to_datetime(not_trig_time).tz_localize('America/Chicago', ambiguous = 'NaT')
+                start_time = not_trig_time
+                # if start_time == 'NaT':
+                #     start_time_localize = pd.to_datetime(not_trig_time).tz_localize('Europe/London') # this localizes the timestamp.
+                #     start_time = pd.to_datetime(start_time_localize).tz_convert('America/Chicago') # this now converts the localized version to chicago timestamp.
+                end_time = start_time + timedelta(hours = 2)
+                # count number of trigs in the two hour window:
+                if trig.shape[0] > 0:
+                    trig_two_hours = trig[(trig['date_time'] >= start_time) & (
+                        trig['date_time'] <= end_time)]
+                    num_trigs_2_hr_no_int = trig_two_hours.shape[0]
+                else:
+                    num_trigs_2_hr_no_int = 0
+                num_trigs_after_not_trig_dec_time[id][day].append(num_trigs_2_hr_no_int)
+        print("    ", num_trigs_after_not_trig_dec_time[id][day])
+        day = day + timedelta(days=1)
+
+# Now produce this fraction for each individual and also on average across individuals:
+frac = {}
+for id in participants_for_analysis:
+    frac[id] = []
+    mrt_id_start_day = mrt_start_day[id]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    day = mrt_id_start_day
+    while day <=  mrt_id_tenth_day:
+        if len(num_trigs_after_not_trig_dec_time[id][day]) != 0:
+            numer = sum(i > 0 for i in num_trigs_after_not_trig_dec_time[id][day])
+            denom = len(num_trigs_after_not_trig_dec_time[id][day])
+            frac_val = numer/denom
+            frac[id].append(round(frac_val,2))
+        else:
+            frac[id].append(np.nan)
+        day = day + timedelta(days=1)
+
+# Average frac for each user:
+average_per_user_frac = {}
+for id in participants_for_analysis:
+    if len(frac[id]) == 0:
+        average_per_user_frac[id] = np.nan
+    else:
+        average_per_user_frac[id] = round(np.nanmean(frac[id]), 2)
+
+# average across all users:
+ave_frac_across_all_users = round(np.nanmean(list(average_per_user_frac.values())), 2)
+#######################################################################################
+
+
+# look at all available decision times at which a treatment is delivered. Of these what fraction
+# of user-decision times have another treatment within 120 min?
+
+num_trigs_after_trig_dec_time = {}
+for id in participants_for_analysis:
+    print("id: ", id)
+    key_name = 'phone_log_' + str(id)
+    mrt_id_start_day = mrt_start_day[id]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
+    day = mrt_id_start_day
+    num_trigs_after_trig_dec_time[id] = {}
+    while day <=  mrt_id_tenth_day:
+        print("  on day : ", day)
+        num_trigs_after_trig_dec_time[id][day] = []
+        id_log_EMI_day = id_log_EMI[id_log_EMI['date'] == day]
+        int_triggered_condition = id_log_EMI_day['isTriggered'] == True
+        # number of stress and not-stress episodes randomized to no message for which
+        # within the following 2 hours a message was delivered to the user:
+        trig = id_log_EMI_day[int_triggered_condition]
+        # trig['date_time_aware'] = [pd.to_datetime(i).tz_localize('America/Chicago', ambiguous = 'NaT') for i in trig['date_time']]
+        if trig.shape[0] > 0:
+            trig_times = list(trig['date_time'])
+            for trig_time in trig_times:
+                start_time = trig_time
+                # end_time = start_time + timedelta(hours = 2)
+                # the next line is a check to make sure no messages were delivered in the following 60 minutes
+                # following an available decision time:
+                end_time = start_time + timedelta(hours = 1)
+                # count number of trigs in the two hour window:
+                trig_two_hours = trig[(trig['date_time'] > start_time) & (trig['date_time'] <= end_time)]
+                num_trigs_2_hr_int = trig_two_hours.shape[0]
+                num_trigs_after_trig_dec_time[id][day].append(num_trigs_2_hr_int)
+        else:
+            num_trigs_after_trig_dec_time[id][day].append(np.nan)
+        print("    ", num_trigs_after_trig_dec_time[id][day])
+        day = day + timedelta(days=1)
+
+# check if anyone gets delivered 2 interventions in the 2 hours following an available
+# decision time in which they are provided an intervention:
+
+for id in participants_for_analysis:
+    mrt_id_start_day = mrt_start_day[id]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    day = mrt_id_start_day
+    while day <=  mrt_id_tenth_day:
+        for el in num_trigs_after_trig_dec_time[id][day]:
+            if el > 0:
+                print("ID: ", id, "  DAY: ", day, "  ELEMENT: ", el)
+        day = day + timedelta(days=1)
+# 60 mins:
+# ID:  202   DAY:  2017-07-08   ELEMENT:  1 !!
+# ID:  224   DAY:  2018-01-25   ELEMENT:  1 !!
+# ID:  226   DAY:  2018-02-12   ELEMENT:  1 !!
+
+# Now produce this fraction for each individual and also on average across individuals:
+frac = {}
+for id in participants_for_analysis:
+    frac[id] = []
+    mrt_id_start_day = mrt_start_day[id]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    day = mrt_id_start_day
+    while day <=  mrt_id_tenth_day:
+        if np.isnan(num_trigs_after_trig_dec_time[id][day][0]):
+            frac[id].append(np.nan)
+        elif len(num_trigs_after_trig_dec_time[id][day]) != 0:
+            numer = sum(i > 0 for i in num_trigs_after_trig_dec_time[id][day])
+            denom = len(num_trigs_after_trig_dec_time[id][day])
+            frac_val = numer/denom
+            frac[id].append(round(frac_val,2))
+        day = day + timedelta(days=1)
+
+# Average frac for each user:
+average_per_user_frac = {}
+for id in participants_for_analysis:
+    if len(frac[id]) == 0:
+        average_per_user_frac[id] = np.nan
+    else:
+        average_per_user_frac[id] = round(np.nanmean(frac[id]), 2)
+
+# average across all users:
+ave_frac_across_all_users = round(np.nanmean(list(average_per_user_frac.values())), 2)
+#######################################################################################
+
+
+
+
+# Create dataset for predicting missing minutes:
+
+# predict_missing_columns = ['id', 'day', 'available_decision_time', 'episode_type',
+#     'previous_episode_type', 'length_of_episode', 'length_of_previous_episode',
+#     'prop_good_data', 'prop_good_data_previous_episode']
+# predict_missing_df = pd.DataFrame(columns = predict_missing_columns)
+
+# add percent good quality data previous day
+# add percent battery high previous day
+# add has lapsed ?
+# add number of prompts so far (maybe they are getting sick of prompts?)
+
+predict_missing_df = pd.DataFrame()
+indexVal = 0
+for idVal in participants_for_analysis:
+    print("id: ", idVal)
+    key_name = 'phone_log_' + str(idVal)
+    mrt_id_start_day = mrt_start_day[idVal]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
+    id_activity = activity[activity['participant_id'] == idVal]
+    id_episodes = episodes[episodes['participant_id'] == idVal]
+    day = mrt_id_start_day
+    day_num = 1 
+    num_ints_trig_prev_day = 0  
+    while day <= mrt_id_tenth_day:
+        print("day: ", day)
+        id_episodes_day = id_episodes[id_episodes['date'] == day]
+        id_log_EMI_day = id_log_EMI[id_log_EMI['date'] == day]
+        id_activity_day = id_activity[id_activity['date'] == day]
+        int_triggered_condition = id_log_EMI_day['isTriggered'] == True
+        int_not_triggered_condition = id_log_EMI_day['isTriggered'] == False
+        available_dec_ponts = id_log_EMI_day[(int_triggered_condition) | (int_not_triggered_condition)]
+        if available_dec_ponts.shape[0] > 0:
+            # an available decision time must either be a minute after the peak of either a 
+            # detected stressed or not able to detect as stressed episode. Note time and 
+            # episode type of each available decision time: 
+            available_decision_times = list(available_dec_ponts['date_time'])
+            available_decision_time_stress = list(available_dec_ponts['isStress'])
+            for avai_dec_time, avai_dec_time_ep_type in zip(available_decision_times, available_decision_time_stress):
+                start_time = avai_dec_time
+                # start_time = pd.to_datetime(avai_dec_time).tz_localize('America/Chicago', ambiguous = 'NaT')
+                # if start_time == 'NaT':
+                #     start_time_localize = pd.to_datetime(avai_dec_time).tz_localize('Europe/London') # this localizes the timestamp.
+                #     start_time = pd.to_datetime(start_time_localize).tz_convert('America/Chicago') # this now converts the localized version to chicago timestamp.
                 end_time = start_time + timedelta(hours = 2)
                 id_episodes_day_2hour = id_episodes_day[(id_episodes_day['datetime_end'] >= start_time) & (id_episodes_day['datetime_start'] <= end_time)]
                 id_activity_day_2hour = id_activity_day[(id_activity_day['datetime'] >= start_time) & (id_activity_day['datetime'] <= end_time)]
                 if id_episodes_day_2hour.shape[0] == 0:
-                    print("id ", idVal, " for available decision time ", avai_dec_time, "has no classified episodes within the following 120 minute window.")
+                    # This means that there is no current episode recorded in the data, nor for the next 120 minutes!!
+                    print("WARNING 1: id ", idVal, " for available decision time ", avai_dec_time, "has no classified episodes from current t to t + 120 minutes!!!!!!")
                 else:
-                    if start_time < id_episodes_day_2hour.iloc[0]['datetime_start']:
-                        # start time is before first classified episode. So, there are missing episodes.
-                        # For now count the missing minutes until the first classified episode as a missing
-                        # episode:
-                        time_missing = (minute_rounder(id_episodes_day_2hour.iloc[0]['datetime_start']) - minute_rounder(start_time)).seconds//60
-                        # find previous classified episode that exists (if it exists) from start time
-                        # of this 120 minute window:
-                        if id_episodes[id_episodes['datetime_end'] < start_time].shape[0] > 0:
-                            # find missing minutes from before start time:
-                            time_prev_ep = (minute_rounder(start_time) - minute_rounder(id_episodes[id_episodes['datetime_end'] < start_time].iloc[-1]['datetime_end'])).seconds//60
-                            type_prev_ep = "missing"
+                    # Check to see if there is no current classified episode in the data. THIS SHOULD NOT HAPPEN!: 
+                    # (e.g., is avai_dec_time within the first row's start and end time?)
+                    if (not (id_episodes_day_2hour.iloc[0].datetime_start <= start_time <= id_episodes_day_2hour.iloc[0].datetime_end)): 
+                        print("WARNING 2: id ", idVal, " for available decision time ", avai_dec_time, "has no classified episode for current t!!!!!!")
+                    # check if the current episode is classified as unknown. THIS SHOULD NOT HAPPEN!
+                    elif id_episodes_day_2hour.iloc[0].event == 3.0: 
+                        print("WARNING 3: id ", idVal, " for available decision time ", avai_dec_time, "is classified as being within an UNKNOWN episode!!!!!!")
+                    else: 
+                        # find previous episodes: 
+                        prev_eps = id_episodes_day[id_episodes_day['datetime_end'] < start_time]
+                        if prev_eps.shape[0] == 0:
+                            # this should mean there are no previous daily episodes detected because this
+                            # is the start of the day as recognised by the randomization algorithm:
+                            prev_ep_type = 'no_previous_daily_episodes'
+                            prev_ep_length = np.nan
                         else:
-                            time_prev_ep = np.nan
-                            type_prev_ep = np.nan
-                        # populate data frame with the first missing episode:
-                        row_to_append = pd.DataFrame({
-                            'id': idVal,
-                            'day': day,
-                            'daynum': day_num,
-                            'available_decision_point': avai_dec_time,
-                            'episode_type': 'missing',
-                            'episode_length': time_missing,
-                            'previous_episode_type': type_prev_ep,
-                            'previous_episode_length': time_prev_ep}, index=[indexVal])
-                        indexVal = indexVal + 1
-                        predict_missing_df = predict_missing_df.append(row_to_append)
-                        prev_ep_length = time_missing
-                        prev_ep_type = 'missing'
-                    # Now start iterating through the episodes, whilst tracking missing minutes
-                    # in-between:
-                    prev_end_time = id_episodes_day_2hour.iloc[0].datetime_start
-                    for id, row in id_episodes_day_2hour.iterrows():
-                        if row.datetime_start != prev_end_time:
-                            # we have found a missing episode in-between prev and current row,
-                            # so count missing minutes:
-                            ep_type = "missing"
-                            ep_length = (minute_rounder(row.datetime_start) - minute_rounder(prev_end_time)).seconds//60
-                            row_to_append = pd.DataFrame({
-                                'id': idVal,
-                                'day': day,
-                                'daynum': day_num,
-                                'available_decision_point': avai_dec_time,
-                                'episode_type': ep_type,
-                                'episode_length': ep_length,
-                                'previous_episode_type': prev_ep_type,
-                                'previous_episode_length': prev_ep_length}, index=[indexVal])
-                            indexVal = indexVal + 1
-                            predict_missing_df = predict_missing_df.append(row_to_append)
-                            prev_ep_type = ep_type
-                            prev_ep_length = ep_length
-                        # Now append current row info:
-                        ep_length = (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
-                        if row.event == 2.0:
-                            ep_type = "stress"
-                        elif row.event == 0.0:
-                            ep_type = "no_stress"
-                        elif row.event == 3.0:
-                            df = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= row.datetime_start) & (id_activity_day_2hour['datetime'] <= row.datetime_end)]
-                            active_mins = df[df['event'] == 1.0].shape[0]
-                            if active_mins >= ((minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60)/2:
-                                # this unknown ep is due to activity:
-                                ep_type = "physically_active"
-                            else:
+                            # prev ep could be missing. check this by seeing if the start time of the current episode (the one in 
+                            # which lies the available decision time) appears as the end time of a previous episode: 
+                            prev_ep = prev_eps.iloc[prev_eps.shape[0] - 1]
+                            if not id_episodes_day_2hour.iloc[0].datetime_start == prev_ep.datetime_end: 
+                                # this means that the previous episode is missing
+                                prev_ep_type = 'missing'
+                            else: 
+                                # this means that the previous episode is not missing: 
+                                if prev_ep.event == 0.0:
+                                    prev_ep_type = 'no_stress'
+                                elif prev_ep.event == 2.0:
+                                    prev_ep_type = 'stress'
+                                elif prev_ep.event == 3.0:
+                                    df = id_activity_day[(id_activity_day['datetime'] >= prev_ep.datetime_start) & (id_activity_day['datetime'] <= prev_ep.datetime_end)]
+                                    active_mins = df[df['event'] == 1.0].shape[0]
+                                    if active_mins >= ((minute_rounder(prev_ep.datetime_end) - minute_rounder(prev_ep.datetime_start)).seconds//60)/2:
+                                        # this unknown ep is due to activity:
+                                        prev_ep_type = "physically_active"
+                                    else:
+                                        prev_ep_type = "missing"
+                            prev_ep_length = (minute_rounder(prev_ep.datetime_end) - minute_rounder(prev_ep.datetime_start)).seconds//60
+                            # record available_dec_time ep type and ep length: 
+                            if avai_dec_time_ep_type: 
+                                available_decision_point_episode_type_val = "stress"
+                            else: 
+                                available_decision_point_episode_type_val = "no_stress"
+                            avai_dec_time_ep = id_episodes_day_2hour.iloc[0]
+                            avai_dec_time_ep_length_val = (minute_rounder(avai_dec_time) - minute_rounder(avai_dec_time_ep.datetime_start)).seconds//60
+                        # Now start iterating through the episodes following the available decision time episode, whilst tracking missing minutes
+                        # in-between until 120 minutes is up:
+                        prev_end_time = id_episodes_day_2hour.iloc[0].datetime_start
+                        for id, row in id_episodes_day_2hour.iterrows():
+                            if row.datetime_start != prev_end_time:
+                                # we have found a missing episode in-between prev and current row,
+                                # so count missing minutes:
                                 ep_type = "missing"
-                        row_to_append = pd.DataFrame({
-                            'id': idVal,
-                            'day': day,
-                            'daynum': day_num,
-                            'available_decision_point': avai_dec_time,
-                            'episode_type': ep_type,
-                            'episode_length': ep_length,
-                            'previous_episode_type': prev_ep_type,
-                            'previous_episode_length': prev_ep_length}, index=[indexVal])
-                        indexVal = indexVal + 1
-                        predict_missing_df = predict_missing_df.append(row_to_append)
-                        prev_ep_length = ep_length
-                        prev_ep_type = ep_type
-                        prev_end_time = row.datetime_end
+                                ep_length = (minute_rounder(row.datetime_start) - minute_rounder(prev_end_time)).seconds//60
+                                row_to_append = pd.DataFrame({
+                                    'id': idVal,
+                                    'day': day,
+                                    'daynum': day_num,
+                                    'available_decision_point': avai_dec_time,
+                                    'available_decision_point_episode_type': available_decision_point_episode_type_val,
+                                    'available_decision_point_episode_length': avai_dec_time_ep_length_val,
+                                    'curr_ep_type': ep_type,
+                                    'curr_ep_length': ep_length,
+                                    'previous_episode_type': prev_ep_type,
+                                    'previous_episode_length': prev_ep_length,
+                                    'prev_day_activity_prop': activity_props[idVal][day_num - 1],
+                                    'prev_day_bad_qual_rep_prop': bad_qual_rep_props[idVal][day_num - 1],
+                                    'prev_day_bad_qual_ecg_prop': bad_qual_ecg_props[idVal][day_num - 1],
+                                    'num_ints_trig_prev_day': num_ints_trig_prev_day}, index=[indexVal])
+                                indexVal = indexVal + 1
+                                predict_missing_df = predict_missing_df.append(row_to_append)
+                                prev_ep_type = ep_type
+                                prev_ep_length = ep_length
+                                prev_end_time = row.datetime_start
+                            else: 
+                                # Now append current row info:
+                                ep_length = (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                                if row.event == 2.0:
+                                    ep_type = "stress"
+                                elif row.event == 0.0:
+                                    ep_type = "no_stress"
+                                elif row.event == 3.0:
+                                    df = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= row.datetime_start) & (id_activity_day_2hour['datetime'] <= row.datetime_end)]
+                                    active_mins = df[df['event'] == 1.0].shape[0]
+                                    if active_mins >= ((minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60)/2:
+                                        # this unknown ep is due to activity:
+                                        ep_type = "physically_active"
+                                    else:
+                                        ep_type = "missing"
+                                row_to_append = pd.DataFrame({
+                                    'id': idVal,
+                                    'day': day,
+                                    'daynum': day_num,
+                                    'available_decision_point': avai_dec_time,
+                                    'available_decision_point_episode_type': available_decision_point_episode_type_val,
+                                    'available_decision_point_episode_length': avai_dec_time_ep_length_val,
+                                    'curr_ep_type': ep_type,
+                                    'curr_ep_length': ep_length,
+                                    'previous_episode_type': prev_ep_type,
+                                    'previous_episode_length': prev_ep_length,
+                                    'prev_day_activity_prop': activity_props[idVal][day_num - 1],
+                                    'prev_day_bad_qual_rep_prop': bad_qual_rep_props[idVal][day_num - 1],
+                                    'prev_day_bad_qual_ecg_prop': bad_qual_ecg_props[idVal][day_num - 1],
+                                    'num_ints_trig_prev_day': num_ints_trig_prev_day}, index=[indexVal])
+                                indexVal = indexVal + 1
+                                predict_missing_df = predict_missing_df.append(row_to_append)
+                                prev_ep_length = ep_length
+                                prev_ep_type = ep_type
+                                prev_end_time = row.datetime_end
+                    # avai_dec_time_count += 1
+        num_ints_trig_prev_day = id_log_EMI_day[int_triggered_condition].shape[0]
         day = day + timedelta(days=1)
         day_num = day_num + 1
 
+                    # if start_time < id_episodes_day_2hour.iloc[0]['datetime_start']:
+                    #     # start time is before first classified episode. So, there are missing episodes.
+                    #     # For now count the missing minutes until the first classified episode as a missing
+                    #     # episode:
+                    #     time_missing = (minute_rounder(id_episodes_day_2hour.iloc[0]['datetime_start']) - minute_rounder(start_time)).seconds//60
+                    #     # find previous classified episode that exists (if it exists) from start time
+                    #     # of this 120 minute window:
+                    #     if id_episodes[id_episodes['datetime_end'] < start_time].shape[0] > 0:
+                    #         # find missing minutes from before start time:
+                    #         time_prev_ep = (minute_rounder(start_time) - minute_rounder(id_episodes[id_episodes['datetime_end'] < start_time].iloc[-1]['datetime_end'])).seconds//60
+                    #         type_prev_ep = "missing"
+                    #     else:
+                    #         time_prev_ep = np.nan
+                    #         type_prev_ep = np.nan
+                    #     # populate data frame with the first missing episode:
+                    #     row_to_append = pd.DataFrame({
+                    #         'id': idVal,
+                    #         'day': day,
+                    #         'daynum': day_num,
+                    #         'available_decision_point': avai_dec_time,
+                    #         'episode_type': 'missing',
+                    #         'episode_length': time_missing,
+                    #         'previous_episode_type': type_prev_ep,
+                    #         'previous_episode_length': time_prev_ep,
+                    #         'prev_day_activity_prop': activity_props[idVal][day_num - 1],
+                    #         'prev_day_bad_qual_rep_prop': bad_qual_rep_props[idVal][day_num - 1],
+                    #         'prev_day_bad_qual_ecg_prop': bad_qual_ecg_props[idVal][day_num - 1],
+                    #         'num_ints_trig_prev_day': num_ints_trig_prev_day}, index=[indexVal])
+                    #     indexVal = indexVal + 1
+                    #     predict_missing_df = predict_missing_df.append(row_to_append)
+                    #     prev_ep_length = time_missing
+                    #     prev_ep_type = 'missing'
+                    # else:
+                        # if we've reached here, we know that the start time is inside a classified
+                        # episode. Find the episode type before this episode:
+                        
+
 # Build model to predict missingness:
-logistic_df = pd.DataFrame()
-logistic_df['id'] = predict_missing_df['id']
-logistic_df['day'] = predict_missing_df['day']
-logistic_df['day_num'] = predict_missing_df['daynum']
-logistic_df['available_decision_point'] = predict_missing_df['available_decision_point']
-logistic_df['episode_type'] = np.where(predict_missing_df['episode_type'] == "missing", 1, 0)
-logistic_df['episode_length'] = predict_missing_df['episode_length']
-logistic_df['previous_episode_type'] = np.where(predict_missing_df['previous_episode_type'] == "missing", 1, 0)
-logistic_df['previous_episode_length'] = predict_missing_df['previous_episode_length']
+missing_df = pd.DataFrame()
+missing_df['id'] = predict_missing_df['id']
+missing_df['day'] = predict_missing_df['day']
+missing_df['day_num'] = predict_missing_df['daynum']
+missing_df['available_decision_point'] = predict_missing_df['available_decision_point']
+missing_df['available_decision_point_stress_episode'] = np.where(predict_missing_df['available_decision_point_episode_type'] == 'stress', 1, 0)
+missing_df['episode_type_miss'] = np.where(predict_missing_df['curr_ep_type'] == "missing", 1, 0)
+missing_df['episode_type_stress'] = np.where(predict_missing_df['curr_ep_type'] == "stress", 1, 0)
+missing_df['episode_type_no_stress'] = np.where(predict_missing_df['curr_ep_type'] == "no_stress", 1, 0)
+missing_df['episode_length'] = predict_missing_df['curr_ep_length']
+missing_df['previous_episode_miss'] = np.where(predict_missing_df['previous_episode_type'] == "missing", 1, 0)
+missing_df['previous_episode_stress'] = np.where(predict_missing_df['previous_episode_type'] == "stress", 1, 0)
+missing_df['previous_episode_no_stress'] = np.where(predict_missing_df['previous_episode_type'] == "no_stress", 1, 0)
+missing_df['previous_episode_length'] = predict_missing_df['previous_episode_length']
+missing_df['prev_day_activity_prop'] = predict_missing_df['prev_day_activity_prop']
+missing_df['prev_day_bad_qual_rep_prop'] = predict_missing_df['prev_day_bad_qual_rep_prop']
+missing_df['prev_day_bad_qual_ecg_prop'] = predict_missing_df['prev_day_bad_qual_ecg_prop']
+missing_df['num_ints_trig_prev_day'] = predict_missing_df['num_ints_trig_prev_day']
+
 # export dataset:
-logistic_df.to_csv('predict_missing_logistic_df.csv')
-
-############################################
-# R code for logistic regression:
-require(ggplot2)
-require(GGally)
-require(reshape2)
-require(lme4)
-require(compiler)
-require(parallel)
-require(boot)
-require(lattice)
-library(ggeffects)
-
-data <- readr::read_csv("predict_missing_logistic_df.csv", col_names = TRUE)
-
-# Remove outliers based on episode length:
-Q <- quantile(data$episode_length, probs=c(.25, .75), na.rm = FALSE)
-iqr <- IQR(data$episode_length)
-up <- Q[2] + (1.5 * iqr) # Upper Range
-low <- Q[1] - (1.5 * iqr) # Lower Range﻿
-
-eliminated <- subset(data, data$episode_length > (Q[1] - (1.5 * iqr)) & data$episode_length < (Q[2] + (1.5 * iqr)))
-
-# estimate the model and store results in m
-
-# standardise variables:
-episode_length_std <- sjmisc::std(eliminated$episode_length)
-previous_episode_length_std <- sjmisc::std(eliminated$previous_episode_length)
-eliminated['episode_length_std'] <- episode_length_std
-eliminated['previous_episode_length_std'] <- previous_episode_length_std
-
-m <- glmer(
-    as.factor(episode_type) ~ as.factor(day_num) + episode_length_std + as.factor(previous_episode_type)
-                   + previous_episode_length_std + (1 | id),
-    data = eliminated,
-    family = binomial(link = "logit"),
-    control = glmerControl(optimizer = "bobyqa"),
-    nAGQ = 10
-)
-
-# print the mod results without correlations among fixed effects
-print(m, corr = FALSE)
-
-# For logistic regression models, since ggeffects returns marginal effects on the
-# response scale, the predicted values are predicted probabilities. Furthermore,
-# for mixed models, the predicted values are typically at the population level,
-# not group-specific.
-me_day_num <- ggpredict(m, "day_num")
-me_episode_length <- ggpredict(m, "episode_length_std")
-me_previous_episode_type <- ggpredict(m, "previous_episode_type")
-me_previous_episode_length <- ggpredict(m, "previous_episode_length_std")
-
-# plot marginal effects:
-plot(me_day_num)
-plot(me_episode_length)
-plot(me_previous_episode_type)
-plot(me_previous_episode_length)
-
-# Test model:
-library(caret)
-Train <- createDataPartition(eliminated$episode_type, p=0.6, list=FALSE)
-training <- eliminated[ Train, ]
-testing <- eliminated[ -Train, ]
-
-mod_fit <- train(
-    as.factor(episode_type) ~ as.factor(day_num) + episode_length_std
-                              + as.factor(previous_episode_type)
-                              + previous_episode_length_std + (1 | id),
-    data = training,
-    method = "glmer",
-    family = binomial(link = "logit"))
-############################################
+missing_df.to_csv('predict_missing_logistic_df.csv')
 
 # How many decision points do we have?
 
@@ -559,6 +1178,9 @@ pre_lapse_day_vals = {} ; available_s_pre_dec_points = {}
 available_s_post_dec_points = {} ; available_ns_pre_dec_points = {}
 available_ns_post_dec_points = {} ; not_missing_mins = {}
 not_missing_mins_frac = {}  ;  total_bad_mins = {}
+total_stress_mins = {}
+total_not_stress_mins = {}
+total_physical_active_mins = {}
 for id in participants_for_analysis:
     key_name = 'phone_log_' + str(id)
     mrt_id_start_day = mrt_start_day[id]
@@ -577,6 +1199,9 @@ for id in participants_for_analysis:
     available_ns_post_dec_points[id] = [] ; not_missing_mins[id] = {}
     not_missing_mins_frac[id] = {}
     total_bad_mins[id] = {}
+    total_stress_mins[id] = {}
+    total_not_stress_mins[id] = {}
+    total_physical_active_mins[id] = {}
     while day <=  mrt_id_tenth_day:
         id_log_EMI_day = id_log_EMI[id_log_EMI['date'] == day]
         id_activity_day = id_activity[id_activity['date'] == day]
@@ -594,13 +1219,17 @@ for id in participants_for_analysis:
         not_missing_mins[id][day] = []
         not_missing_mins_frac[id][day] = []
         total_bad_mins[id][day] = []
+        total_stress_mins[id][day] = []
+        total_not_stress_mins[id][day] = []
+        total_physical_active_mins[id][day] = []
         if available_dec_ponts.shape[0] > 0:
             available_decision_times = list(available_dec_ponts['date_time'])
             for avai_dec_time in available_decision_times:
-                start_time = pd.to_datetime(avai_dec_time).tz_localize('America/Chicago', ambiguous = 'NaT')
-                if start_time == 'NaT':
-                    start_time_localize = pd.to_datetime(avai_dec_time).tz_localize('Europe/London') # this localizes the timestamp.
-                    start_time = pd.to_datetime(start_time_localize).tz_convert('America/Chicago') # this now converts the localized version to chicago timestamp.
+                start_time = avai_dec_time
+                # start_time = pd.to_datetime(avai_dec_time).tz_localize('America/Chicago', ambiguous = 'NaT')
+                # if start_time == 'NaT':
+                #     start_time_localize = pd.to_datetime(avai_dec_time).tz_localize('Europe/London') # this localizes the timestamp.
+                #     start_time = pd.to_datetime(start_time_localize).tz_convert('America/Chicago') # this now converts the localized version to chicago timestamp.
                 end_time = start_time + timedelta(hours = 2)
                 id_episodes_day_2hour = id_episodes_day[(id_episodes_day['datetime_end'] >= start_time) & (id_episodes_day['datetime_start'] <= end_time)]
                 id_activity_day_2hour = id_activity_day[(id_activity_day['datetime'] >= start_time) & (id_activity_day['datetime'] <= end_time)]
@@ -662,6 +1291,12 @@ for id in participants_for_analysis:
                 #     print(id)
                 #     print(day)
                 #     print(avai_dec_time)
+                total_stress_mins_val = round(stress_min_count, 2)
+                total_not_stress_mins_val = round(not_stress_min_count, 2)
+                total_physical_active_mins_val = round(unknown_due_to_activity_mins, 2)
+                total_stress_mins[id][day].append(total_stress_mins_val)
+                total_not_stress_mins[id][day].append(total_not_stress_mins_val)
+                total_physical_active_mins[id][day].append(total_physical_active_mins_val)
                 total_mins = stress_min_count + not_stress_min_count + unknown_due_to_activity_mins
                 total_mins_frac = round(total_mins/float(120),1)
                 not_missing_mins[id][day].append(total_mins)
@@ -714,6 +1349,325 @@ for id in participants_for_analysis:
             pre_lapse_val = np.nan
         pre_lapse_day_vals[id].append(pre_lapse_val)
         day = day + timedelta(days=1)
+
+# calculate summarise for
+##### 1. total stress mins
+##### 2. total not stress mins
+##### 3. total physically active mins
+##### ... following:
+###### a. available decision times
+###### b. available decision times at which the individual is detected stressed
+###### c. available decision times at which the individual is not detected stressed
+
+stress_mins_frac = {}
+not_stress_mins_frac = {}
+active_mins_frac = {}
+for id in not_missing_mins.keys():
+    stress_mins_frac[id] = {}
+    not_stress_mins_frac[id] = {}
+    active_mins_frac[id] = {}
+    for day in not_missing_mins[id].keys():
+        stress_mins_frac[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_stress_mins[id][day], not_missing_mins[id][day])]
+        not_stress_mins_frac[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_not_stress_mins[id][day], not_missing_mins[id][day])]
+        active_mins_frac[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_physical_active_mins[id][day], not_missing_mins[id][day])]
+
+mean_stress_mins_frac = {}
+mean_not_stress_mins_frac = {}
+mean_active_mins_frac =  {}
+for id in stress_mins_frac.keys():
+    mean_stress_mins_frac[id] = []
+    mean_not_stress_mins_frac[id] = []
+    mean_active_mins_frac[id] =  []
+    for day in not_missing_mins[id].keys():
+        mean_stress_mins_frac[id].append(round(np.nanmean(stress_mins_frac[id][day]),2))
+        mean_not_stress_mins_frac[id].append(round(np.nanmean(not_stress_mins_frac[id][day]),2))
+        mean_active_mins_frac[id].append(round(np.nanmean(active_mins_frac[id][day]),2))
+
+mean_across_days_stress_mins = []
+mean_across_days_not_stress_mins = []
+mean_across_days_active_mins = []
+for id in mean_stress_mins_frac.keys():
+    mean_across_days_stress_mins.append(round(np.nanmean(mean_stress_mins_frac[id]),2))
+    mean_across_days_not_stress_mins.append(round(np.nanmean(mean_not_stress_mins_frac[id]),2))
+    mean_across_days_active_mins.append(round(np.nanmean(mean_active_mins_frac[id]),2))
+
+# Now calculate these fractions over the entire 120 mins: 
+
+classifiable_mins_frac = {}
+for id in total_stress_mins.keys():
+    classifiable_mins_frac[id] = {}
+    for day in total_stress_mins[id].keys():
+        classifiable_mins_frac[id][day] = [round((i + j + k)/120, 2) for i, j, k in zip(total_stress_mins[id][day], total_not_stress_mins[id][day], total_physical_active_mins[id][day])]
+
+mean_classifiable_mins_frac_days = {}
+for id in classifiable_mins_frac.keys():
+    mean_classifiable_mins_frac_days[id] = []
+    for day in classifiable_mins_frac[id].keys():
+        mean_classifiable_mins_frac_days[id].append(round(np.nanmean(classifiable_mins_frac[id][day]),2))
+
+
+# Now do this filtered by available decision time in which the user is either detected to be stressed
+# or not detected to be stressed:
+
+not_missing_mins_S = {}
+total_stress_mins_S = {}
+total_not_stress_mins_S = {}
+total_physical_active_mins_S = {}
+not_missing_mins_NS = {}
+total_stress_mins_NS = {}
+total_not_stress_mins_NS = {}
+total_physical_active_mins_NS = {}
+for id in participants_for_analysis:
+    key_name = 'phone_log_' + str(id)
+    mrt_id_start_day = mrt_start_day[id]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
+    id_activity = activity[activity['participant_id'] == id]
+    id_episodes = episodes[episodes['participant_id'] == id]
+    day = mrt_id_start_day
+    not_missing_mins_S[id] = {}
+    total_stress_mins_S[id] = {}
+    total_not_stress_mins_S[id] = {}
+    total_physical_active_mins_S[id] = {}
+    not_missing_mins_NS[id] = {}
+    total_stress_mins_NS[id] = {}
+    total_not_stress_mins_NS[id] = {}
+    total_physical_active_mins_NS[id] = {}
+    while day <=  mrt_id_tenth_day:
+        id_log_EMI_day = id_log_EMI[id_log_EMI['date'] == day]
+        id_activity_day = id_activity[id_activity['date'] == day]
+        id_episodes_day = id_episodes[id_episodes['date'] == day]
+        available_condition = id_log_EMI_day['message'] == 'true: all conditions okay'
+        unavailable_condition = id_log_EMI_day['message'] == 'false: some conditions are failed'
+        int_triggered_condition = id_log_EMI_day['isTriggered'] == True
+        int_not_triggered_condition = id_log_EMI_day['isTriggered'] == False
+        # calculate ave. no. of ints:
+        available_dec_points = id_log_EMI_day[(int_triggered_condition) | (int_not_triggered_condition)]
+        available_dec_points_stress = available_dec_points[available_dec_points['isStress'] == True]
+        available_dec_points_not_stress = available_dec_points[available_dec_points['isStress'] == False]
+        # from each decision point, calculate the minutes in the following 120 minute window
+        # that are (1) in a stress episode; (2) in a not-able-to-classify-as-stress episode; and
+        # (3) unknown due to physical activity. Then calculate the fraction of the 120 minute
+        # window this corresponds to:
+        not_missing_mins_S[id][day] = []
+        total_stress_mins_S[id][day] = []
+        total_not_stress_mins_S[id][day] = []
+        total_physical_active_mins_S[id][day] = []
+        not_missing_mins_NS[id][day] = []
+        total_stress_mins_NS[id][day] = []
+        total_not_stress_mins_NS[id][day] = []
+        total_physical_active_mins_NS[id][day] = []
+        if available_dec_points_stress.shape[0] > 0:
+            available_decision_times_stressed = list(available_dec_points_stress['date_time'])
+            for avai_dec_time in available_decision_times_stressed:
+                start_time = avai_dec_time
+                # start_time = pd.to_datetime(avai_dec_time).tz_localize('America/Chicago', ambiguous = 'NaT')
+                # if start_time == 'NaT':
+                #     start_time_localize = pd.to_datetime(avai_dec_time).tz_localize('Europe/London') # this localizes the timestamp.
+                #     start_time = pd.to_datetime(start_time_localize).tz_convert('America/Chicago') # this now converts the localized version to chicago timestamp.
+                end_time = start_time + timedelta(hours = 2)
+                id_episodes_day_2hour = id_episodes_day[(id_episodes_day['datetime_end'] >= start_time) & (id_episodes_day['datetime_start'] <= end_time)]
+                id_activity_day_2hour = id_activity_day[(id_activity_day['datetime'] >= start_time) & (id_activity_day['datetime'] <= end_time)]
+                # count minutes stressed:
+                stress_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 2.0]
+                stress_min_count = 0
+                if stress_eps.shape[0] > 0:
+                    for index, row in stress_eps.iterrows():
+                        if row.datetime_start <= start_time:
+                            stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                        elif row.datetime_end >= end_time:
+                            stress_min_count += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                        else:
+                            stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                # count minutes not stressed:
+                not_stress_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 0.0]
+                not_stress_min_count = 0
+                if not_stress_eps.shape[0] > 0:
+                    for index, row in not_stress_eps.iterrows():
+                        if row.datetime_start <= start_time:
+                            not_stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                        elif row.datetime_end >= end_time:
+                            not_stress_min_count += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                        else:
+                            not_stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                    # count minutes active inside unknown episodes:
+                unknown_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 3.0]
+                unknown_due_to_activity_mins = 0
+                unknown_due_to_bad_data_mins = 0
+                if unknown_eps.shape[0] > 0:
+                    for index, row in unknown_eps.iterrows():
+                        if row.datetime_start <= start_time:
+                            df = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= start_time) & (id_activity_day_2hour['datetime'] <= row.datetime_end)]
+                            active_mins = df[df['event'] == 1.0].shape[0]
+                        elif row.datetime_end >= end_time:
+                            df = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= row.datetime_start) & (id_activity_day_2hour['datetime'] <= end_time)]
+                            active_mins = df[df['event'] == 1.0].shape[0]
+                        else:
+                            df = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= row.datetime_start) & (id_activity_day_2hour['datetime'] <= row.datetime_end)]
+                            active_mins = df[df['event'] == 1.0].shape[0]
+                        #
+                        if active_mins >= ((minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60)/2:
+                            # this episode is unknown due to activity
+                            if row.datetime_start <= start_time:
+                                unknown_due_to_activity_mins += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                            elif row.datetime_end >= end_time:
+                                unknown_due_to_activity_mins += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                            else:
+                                unknown_due_to_activity_mins += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                        else:
+                            if row.datetime_start <= start_time:
+                                unknown_due_to_bad_data_mins += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                            elif row.datetime_end >= end_time:
+                                unknown_due_to_bad_data_mins += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                            else:
+                                unknown_due_to_bad_data_mins += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                total_stress_mins_val = round(stress_min_count, 2)
+                total_not_stress_mins_val = round(not_stress_min_count, 2)
+                total_physical_active_mins_val = round(unknown_due_to_activity_mins, 2)
+                total_stress_mins_S[id][day].append(total_stress_mins_val)
+                total_not_stress_mins_S[id][day].append(total_not_stress_mins_val)
+                total_physical_active_mins_S[id][day].append(total_physical_active_mins_val)
+                total_mins = stress_min_count + not_stress_min_count + unknown_due_to_activity_mins
+                not_missing_mins_S[id][day].append(total_mins)
+        if available_dec_points_not_stress.shape[0] > 0:
+            available_decision_times_not_stressed = list(available_dec_points_not_stress['date_time'])
+            for avai_dec_time in available_decision_times_not_stressed:
+                start_time = avai_dec_time
+                # start_time = pd.to_datetime(avai_dec_time).tz_localize('America/Chicago', ambiguous = 'NaT')
+                # if start_time == 'NaT':
+                #     start_time_localize = pd.to_datetime(avai_dec_time).tz_localize('Europe/London') # this localizes the timestamp.
+                #     start_time = pd.to_datetime(start_time_localize).tz_convert('America/Chicago') # this now converts the localized version to chicago timestamp.
+                end_time = start_time + timedelta(hours = 2)
+                id_episodes_day_2hour = id_episodes_day[(id_episodes_day['datetime_end'] >= start_time) & (id_episodes_day['datetime_start'] <= end_time)]
+                id_activity_day_2hour = id_activity_day[(id_activity_day['datetime'] >= start_time) & (id_activity_day['datetime'] <= end_time)]
+                # count minutes stressed:
+                stress_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 2.0]
+                stress_min_count = 0
+                if stress_eps.shape[0] > 0:
+                    for index, row in stress_eps.iterrows():
+                        if row.datetime_start <= start_time:
+                            stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                        elif row.datetime_end >= end_time:
+                            stress_min_count += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                        else:
+                            stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                # count minutes not stressed:
+                not_stress_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 0.0]
+                not_stress_min_count = 0
+                if not_stress_eps.shape[0] > 0:
+                    for index, row in not_stress_eps.iterrows():
+                        if row.datetime_start <= start_time:
+                            not_stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                        elif row.datetime_end >= end_time:
+                            not_stress_min_count += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                        else:
+                            not_stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                # count minutes active inside unknown episodes:
+                unknown_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 3.0]
+                unknown_due_to_activity_mins = 0
+                unknown_due_to_bad_data_mins = 0
+                if unknown_eps.shape[0] > 0:
+                    for index, row in unknown_eps.iterrows():
+                        if row.datetime_start <= start_time:
+                            df = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= start_time) & (id_activity_day_2hour['datetime'] <= row.datetime_end)]
+                            active_mins = df[df['event'] == 1.0].shape[0]
+                        elif row.datetime_end >= end_time:
+                            df = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= row.datetime_start) & (id_activity_day_2hour['datetime'] <= end_time)]
+                            active_mins = df[df['event'] == 1.0].shape[0]
+                        else:
+                            df = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= row.datetime_start) & (id_activity_day_2hour['datetime'] <= row.datetime_end)]
+                            active_mins = df[df['event'] == 1.0].shape[0]
+                        #
+                        if active_mins >= ((minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60)/2:
+                            # this episode is unknown due to activity
+                            if row.datetime_start <= start_time:
+                                unknown_due_to_activity_mins += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                            elif row.datetime_end >= end_time:
+                                unknown_due_to_activity_mins += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                            else:
+                                unknown_due_to_activity_mins += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                        else:
+                            if row.datetime_start <= start_time:
+                                unknown_due_to_bad_data_mins += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                            elif row.datetime_end >= end_time:
+                                unknown_due_to_bad_data_mins += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                            else:
+                                unknown_due_to_bad_data_mins += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                total_stress_mins_val = round(stress_min_count, 2)
+                total_not_stress_mins_val = round(not_stress_min_count, 2)
+                total_physical_active_mins_val = round(unknown_due_to_activity_mins, 2)
+                total_stress_mins_NS[id][day].append(total_stress_mins_val)
+                total_not_stress_mins_NS[id][day].append(total_not_stress_mins_val)
+                total_physical_active_mins_NS[id][day].append(total_physical_active_mins_val)
+                total_mins = stress_min_count + not_stress_min_count + unknown_due_to_activity_mins
+                not_missing_mins_NS[id][day].append(total_mins)
+        day = day + timedelta(days=1)
+
+
+stress_mins_frac_S = {}
+not_stress_mins_frac_S = {}
+active_mins_frac_S = {}
+for id in not_missing_mins_S.keys():
+    stress_mins_frac_S[id] = {}
+    not_stress_mins_frac_S[id] = {}
+    active_mins_frac_S[id] = {}
+    for day in not_missing_mins_S[id].keys():
+        stress_mins_frac_S[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_stress_mins_S[id][day], not_missing_mins_S[id][day])]
+        not_stress_mins_frac_S[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_not_stress_mins_S[id][day], not_missing_mins_S[id][day])]
+        active_mins_frac_S[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_physical_active_mins_S[id][day], not_missing_mins_S[id][day])]
+
+stress_mins_frac_NS = {}
+not_stress_mins_frac_NS = {}
+active_mins_frac_NS = {}
+for id in not_missing_mins_NS.keys():
+    stress_mins_frac_NS[id] = {}
+    not_stress_mins_frac_NS[id] = {}
+    active_mins_frac_NS[id] = {}
+    for day in not_missing_mins_NS[id].keys():
+        stress_mins_frac_NS[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_stress_mins_NS[id][day], not_missing_mins_NS[id][day])]
+        not_stress_mins_frac_NS[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_not_stress_mins_NS[id][day], not_missing_mins_NS[id][day])]
+        active_mins_frac_NS[id][day] = [round(i/float(j),2) if j != 0 else np.nan for (i,j) in zip(total_physical_active_mins_NS[id][day], not_missing_mins_NS[id][day])]
+
+mean_stress_mins_frac_S = {}
+mean_not_stress_mins_frac_S = {}
+mean_active_mins_frac_S =  {}
+for id in stress_mins_frac_S.keys():
+    mean_stress_mins_frac_S[id] = []
+    mean_not_stress_mins_frac_S[id] = []
+    mean_active_mins_frac_S[id] =  []
+    for day in not_missing_mins_S[id].keys():
+        mean_stress_mins_frac_S[id].append(round(np.nanmean(stress_mins_frac_S[id][day]),2))
+        mean_not_stress_mins_frac_S[id].append(round(np.nanmean(not_stress_mins_frac_S[id][day]),2))
+        mean_active_mins_frac_S[id].append(round(np.nanmean(active_mins_frac_S[id][day]),2))
+
+mean_stress_mins_frac_NS = {}
+mean_not_stress_mins_frac_NS = {}
+mean_active_mins_frac_NS =  {}
+for id in stress_mins_frac_NS.keys():
+    mean_stress_mins_frac_NS[id] = []
+    mean_not_stress_mins_frac_NS[id] = []
+    mean_active_mins_frac_NS[id] =  []
+    for day in not_missing_mins_NS[id].keys():
+        mean_stress_mins_frac_NS[id].append(round(np.nanmean(stress_mins_frac_NS[id][day]),2))
+        mean_not_stress_mins_frac_NS[id].append(round(np.nanmean(not_stress_mins_frac_NS[id][day]),2))
+        mean_active_mins_frac_NS[id].append(round(np.nanmean(active_mins_frac_NS[id][day]),2))
+
+mean_across_days_stress_mins_S = []
+mean_across_days_not_stress_mins_S = []
+mean_across_days_active_mins_S = []
+for id in mean_stress_mins_frac_S.keys():
+    mean_across_days_stress_mins_S.append(round(np.nanmean(mean_stress_mins_frac_S[id]),2))
+    mean_across_days_not_stress_mins_S.append(round(np.nanmean(mean_not_stress_mins_frac_S[id]),2))
+    mean_across_days_active_mins_S.append(round(np.nanmean(mean_active_mins_frac_S[id]),2))
+
+mean_across_days_stress_mins_NS = []
+mean_across_days_not_stress_mins_NS = []
+mean_across_days_active_mins_NS = []
+for id in mean_stress_mins_frac_NS.keys():
+    mean_across_days_stress_mins_NS.append(round(np.nanmean(mean_stress_mins_frac_NS[id]),2))
+    mean_across_days_not_stress_mins_NS.append(round(np.nanmean(mean_not_stress_mins_frac_NS[id]),2))
+    mean_across_days_active_mins_NS.append(round(np.nanmean(mean_active_mins_frac_NS[id]),2))
+
 
 # Make sure that total_bad_mins and not_missing_mins sum to close to 120:
 total_total_mins = {}
@@ -1121,12 +2075,12 @@ received_intervention = []
 for id in all_participant_ids:
     name = 'phone_log_' + str(id)
     df = logs[name]
-    df['date_time_w_tz'] = [i.tz_localize(tz=pytz.timezone('America/Chicago'), ambiguous = 'NaT') for i in df['date_time']]
+    # df['date_time_w_tz'] = [i.tz_localize(tz=pytz.timezone('America/Chicago'), ambiguous = 'NaT') for i in df['date_time']]
     if np.sum(df['operation'] == 'EMI_INFO') == 0:
         string = 'Participant ' + str(id) + ' does not have any decision times.'
-        min_date = min(df['date_time_w_tz'])
-        max_date = max(df['date_time_w_tz'])
-        df['date'] = [i.date() for i in df['date_time_w_tz']]
+        min_date = min(df['date_time'])
+        max_date = max(df['date_time'])
+        df['date'] = [i.date() for i in df['date_time']]
         days_present.append(df['date'].nunique())
         diff = max_date - min_date
         diff_days = int(diff.days)
@@ -1137,13 +2091,13 @@ for id in all_participant_ids:
         randomised.append("No")
         received_intervention.append("No")
     else:
-        df['date'] = [i.date() for i in df['date_time_w_tz']]
+        df['date'] = [i.date() for i in df['date_time']]
         days_present.append(df['date'].nunique())
         df['intervention'] = df.apply(intervention, axis=1)
         id_decision_times = df[(df.intervention == 'class_stress') | (df.intervention == 'class_notStress')].reset_index(drop=True)
         all_id_decision_times[name] = id_decision_times
-        min_date = min(df['date_time_w_tz'])
-        max_date = max(df['date_time_w_tz'])
+        min_date = min(df['date_time'])
+        max_date = max(df['date_time'])
         diff = max_date - min_date
         diff_days = int(diff.days)
         days_in_study.append(diff_days)
@@ -1154,9 +2108,9 @@ for id in all_participant_ids:
             received_intervention.append("Yes")
 
 
-decision_times = pd.DataFrame(columns=['date_time_w_tz', 'participant_id', 'isStress', 'isTriggered'])
+decision_times = pd.DataFrame(columns=['date_time', 'participant_id', 'isStress', 'isTriggered'])
 for key in all_id_decision_times.keys():
-    df = all_id_decision_times[key][['date_time_w_tz', 'participant_id', 'isStress', 'isTriggered']].copy()
+    df = all_id_decision_times[key][['date_time', 'participant_id', 'isStress', 'isTriggered']].copy()
     decision_times = decision_times.append(df, ignore_index=True)
 
 joblib.dump(decision_times, 'decision_times.pkl')
