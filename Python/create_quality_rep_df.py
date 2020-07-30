@@ -69,5 +69,5 @@ quality_rep = quality_rep.drop_duplicates().reset_index(drop=True)
 
 # export dataset:
 
-wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/python_dfs/quality_rep_df.csv"
-quality_rep.to_csv(wd_to_save)
+wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/quality_rep_df.pkl"
+quality_rep.to_pickle(wd_to_save)

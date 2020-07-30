@@ -2,7 +2,7 @@
 # Show the extent of missing data in the primary outcome 
 # for the Sense2Stop MRT. 
 
-# Last changed: 23 JUL 2020
+# Last changed: 27 JUL 2020
 
 # import modules:
 
@@ -14,14 +14,13 @@ from datetime import datetime
 from datetime import timedelta
 
 from user_defined_modules import date_time
+from user_defined_modules import minute_rounder
 
 # import ast
 # import joblib
 # import pytz
 
 wd_cleaned_data = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/stress_cleaned_data"
-wd_python_dfs = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/python_dfs/"
-wd_pickle_jar = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/"
 
 file_marker = 'phone_log_backup'
 participant_ids_backup = [filename[len(file_marker):len(file_marker)+3] for filename in os.listdir(wd_cleaned_data) if file_marker in filename]
@@ -46,23 +45,24 @@ all_expected_inds = set(range(201, 271))
 all_received_inds = set([int(i) for i in all_participant_ids])
 missing_inds = all_expected_inds.difference(all_received_inds) # no missing inds
 
-# Import dictionary of data frames for the processed phone logs for each participant:
+# Import pickles from pickle jar:
 
-with open(wd_pickle_jar + 'log_dict.pkl', 'rb') as handle:
+pickle_jar = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/"
+
+with open(pickle_jar + 'log_dict.pkl', 'rb') as handle:
     logs = pickle.load(handle)
 
-# Import proccessed data frames:
-
-activity = pd.read_csv(wd_python_dfs + "activity_df.csv").drop(['Unnamed: 0'], axis=1)
-quality_ecg = pd.read_csv(wd_python_dfs + "quality_ecg_df.csv").drop(['Unnamed: 0'], axis=1)
-quality_rep = pd.read_csv(wd_python_dfs + "quality_rep_df.csv").drop(['Unnamed: 0'], axis=1)
-stress_episode_classifications = pd.read_csv(wd_python_dfs + "stress_episode_classification_df.csv").drop(['Unnamed: 0'], axis=1)
+activity = pd.read_pickle(pickle_jar + "activity_df.pkl")
+quality_ecg = pd.read_pickle(pickle_jar + "quality_ecg_df.pkl")
+quality_rep = pd.read_pickle(pickle_jar + "quality_rep_df.pkl")
+stress_episode_classifications = pd.read_pickle(pickle_jar + "stress_episode_classification_df.pkl")
 
 # print unique dates in log files:
+
 for id in all_participant_ids:
     print(id)
     value_name = 'phone_log_' + str(id)
-    uq_dates = sorted(set([date_time(i).date() for i in logs_w_dicts[value_name]['timestamp']]))
+    uq_dates = sorted(set([date_time(i).date() for i in logs[value_name]['time_stamp']]))
     print(uq_dates)
 
 no_dec_points = [201, 204, 206, 209, 210, 215, 217, 218, 220, 230, 232, 236,
@@ -128,7 +128,198 @@ participants_for_analysis = list(mrt_start_day.keys())
 
 # Show proportions of missing data: 
 
+decision_points = {} ; available_decision_points = {}
+ints_triggered = {} ; ints_not_triggered = {}
+trigg_stress = {} ; trigg_not_stress = {}
+trigg_stress_prelapse = {} ; trigg_stress_postlapse = {}
+trigg_not_stress_prelapse = {} ; trigg_not_stress_postlapse = {}
+pre_lapse_day_vals = {} ; available_s_pre_dec_points = {}
+available_s_post_dec_points = {} ; available_ns_pre_dec_points = {}
+available_ns_post_dec_points = {} ; not_missing_mins = {}
+not_missing_mins_frac = {}  ;  total_bad_mins = {}
+total_stress_mins = {}
+total_not_stress_mins = {}
+total_physical_active_mins = {}
+for id in participants_for_analysis:
+    print("id: ", id)
+    key_name = 'phone_log_' + str(id)
+    mrt_id_start_day = mrt_start_day[id]
+    mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
+    id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
+    id_activity = activity[activity['participant_id'] == id]
+    id_episodes = stress_episode_classifications[stress_episode_classifications['participant_id'] == id]
+    day = mrt_id_start_day
+    decision_points[id] = [] ; available_decision_points[id] = []
+    ints_triggered[id] = [] ; ints_not_triggered[id] = []
+    trigg_stress[id] = [] ; trigg_not_stress[id] = []
+    trigg_stress_prelapse[id] = [] ; trigg_stress_postlapse[id] = []
+    trigg_not_stress_prelapse[id] = [] ; trigg_not_stress_postlapse[id] = []
+    pre_lapse_day_vals[id] = [] ; available_s_pre_dec_points[id] = []
+    available_s_post_dec_points[id] = [] ; available_ns_pre_dec_points[id] = []
+    available_ns_post_dec_points[id] = [] ; not_missing_mins[id] = {}
+    not_missing_mins_frac[id] = {}
+    total_bad_mins[id] = {}
+    total_stress_mins[id] = {}
+    total_not_stress_mins[id] = {}
+    total_physical_active_mins[id] = {}
+    while day <=  mrt_id_tenth_day:
+        print("day: ", day)
+        id_log_EMI_day = id_log_EMI[id_log_EMI['date'] == day]
+        id_activity_day = id_activity[id_activity['date'] == day]
+        id_episodes_day = id_episodes[id_episodes['date'] == day]
+        available_condition = id_log_EMI_day['message'] == 'true: all conditions okay'
+        unavailable_condition = id_log_EMI_day['message'] == 'false: some conditions are failed'
+        int_triggered_condition = id_log_EMI_day['isTriggered'] == True
+        int_not_triggered_condition = id_log_EMI_day['isTriggered'] == False
+        # calculate ave. no. of ints:
+        available_dec_ponts = id_log_EMI_day[(int_triggered_condition) | (int_not_triggered_condition)]
+        # from each decision point, calculate the minutes in the following 120 minute window
+        # that are (1) in a stress episode; (2) in a not-able-to-classify-as-stress episode; and
+        # (3) unknown due to physical activity. Then calculate the fraction of the 120 minute
+        # window this corresponds to:
+        not_missing_mins[id][day] = []
+        not_missing_mins_frac[id][day] = []
+        total_bad_mins[id][day] = []
+        total_stress_mins[id][day] = []
+        total_not_stress_mins[id][day] = []
+        total_physical_active_mins[id][day] = []
+        if available_dec_ponts.shape[0] > 0:
+            available_decision_times = list(available_dec_ponts['date_time'])
+            for avai_dec_time in available_decision_times:
+                start_time = avai_dec_time
+                end_time = start_time + timedelta(hours = 2)
+                id_episodes_day_2hour = id_episodes_day[(id_episodes_day['datetime_end'] >= start_time) & (id_episodes_day['datetime_start'] <= end_time)]
+                id_activity_day_2hour = id_activity_day[(id_activity_day['datetime'] >= start_time) & (id_activity_day['datetime'] <= end_time)]
+                # count minutes stressed:
+                stress_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 2.0]
+                stress_min_count = 0
+                if stress_eps.shape[0] > 0:
+                    for index, row in stress_eps.iterrows():
+                        if row.datetime_start <= start_time:
+                            stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                        elif row.datetime_end >= end_time:
+                            stress_min_count += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                        else:
+                            stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                # count minutes not stressed:
+                not_stress_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 0.0]
+                not_stress_min_count = 0
+                if not_stress_eps.shape[0] > 0:
+                    for index, row in not_stress_eps.iterrows():
+                        if row.datetime_start <= start_time:
+                            not_stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                        elif row.datetime_end >= end_time:
+                            not_stress_min_count += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                        else:
+                            not_stress_min_count += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                # count minutes active inside unknown episodes:
+                unknown_eps = id_episodes_day_2hour[id_episodes_day_2hour['event'] == 3.0]
+                unknown_due_to_activity_mins = 0
+                unknown_due_to_bad_data_mins = 0
+                if unknown_eps.shape[0] > 0:
+                    for index, row in unknown_eps.iterrows():
+                        # first check to see if the entire episode (wherever it occurs within the 120 minutes) is unknown due to 
+                        # physical activity. This would mean that the number of physical activity minutes from start to peak is 
+                        # greater than the number of minutes from start to peak / 2: 
+                        time_start_to_peak = (minute_rounder(row.datetime_peak) - minute_rounder(row.datetime_start)).seconds//60
+                        df_active_class_start_to_peak = id_activity_day_2hour[(id_activity_day_2hour['datetime'] >= row.datetime_start) & (id_activity_day_2hour['datetime'] <= row.datetime_peak)]
+                        df_active_start_to_peak = df_active_class_start_to_peak[df_active_class_start_to_peak['event'] == 1.0]
+                        num_mins_active_start_to_peak = df_active_start_to_peak.shape[0]
+                        if num_mins_active_start_to_peak >= time_start_to_peak/2: 
+                            # This unknown episode is due to physical activity. Now count the number of 
+                            # minutes in this entire episode based on where this episode lies in the 120 mins:
+                            if row.datetime_start <= start_time:
+                                # WARNING: this should technically never happen since the randomization time should not be within an 
+                                # unknown episode. However, we know that the data is such that this occurs a few times (due to a bug?)
+                                # In this case, we plan to remove such randomization times in the primary analysis. So, continue and don't 
+                                # count this:
+                                continue
+                            elif row.datetime_end >= end_time:
+                                unknown_due_to_activity_mins += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                            else:
+                                unknown_due_to_activity_mins += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                        else: 
+                            # this episode is unknown due to bad quality data: 
+                            if row.datetime_start <= start_time:
+                                unknown_due_to_bad_data_mins += (minute_rounder(row.datetime_end) - minute_rounder(start_time)).seconds//60
+                            elif row.datetime_end >= end_time:
+                                unknown_due_to_bad_data_mins += (minute_rounder(end_time) - minute_rounder(row.datetime_start)).seconds//60
+                            else:
+                                unknown_due_to_bad_data_mins += (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
+                total_stress_mins_val = round(stress_min_count, 2)
+                total_not_stress_mins_val = round(not_stress_min_count, 2)
+                total_physical_active_mins_val = round(unknown_due_to_activity_mins, 2)
+                total_stress_mins[id][day].append(total_stress_mins_val)
+                total_not_stress_mins[id][day].append(total_not_stress_mins_val)
+                total_physical_active_mins[id][day].append(total_physical_active_mins_val)
+                total_mins = stress_min_count + not_stress_min_count + unknown_due_to_activity_mins
+                total_mins_frac = round(total_mins/float(120),1)
+                not_missing_mins[id][day].append(total_mins)
+                not_missing_mins_frac[id][day].append(total_mins_frac)
+                total_bad_mins[id][day].append(unknown_due_to_bad_data_mins)
+        available_s_pre = available_dec_ponts[(available_dec_ponts['isStress'] == True) & (available_dec_ponts['isPreLapse'] == True)]
+        available_s_post = available_dec_ponts[(available_dec_ponts['isStress'] == True) & (available_dec_ponts['isPreLapse'] == False)]
+        available_ns_pre = available_dec_ponts[(available_dec_ponts['isStress'] == False) & (available_dec_ponts['isPreLapse'] == True)]
+        available_ns_post = available_dec_ponts[(available_dec_ponts['isStress'] == False) & (available_dec_ponts['isPreLapse'] == False)]
+        available_s_pre_dec_points[id].append(available_s_pre.shape[0])
+        available_s_post_dec_points[id].append(available_s_post.shape[0])
+        available_ns_pre_dec_points[id].append(available_ns_pre.shape[0])
+        available_ns_post_dec_points[id].append(available_ns_post.shape[0])
+        trig = id_log_EMI_day[int_triggered_condition]
+        not_trig =id_log_EMI_day[int_not_triggered_condition]
+        trigg_stress_df = trig[trig['isStress'] == True]
+        trigg_not_stress_df = trig[trig['isStress'] == False]
+        trigg_stress[id].append(trigg_stress_df.shape[0])
+        trigg_not_stress[id].append(trigg_not_stress_df.shape[0])
+        # stress + prelapse
+        trigg_stress_prelapse_df = trigg_stress_df[trigg_stress_df['isPreLapse'] == True]
+        trigg_stress_prelapse[id].append(trigg_stress_prelapse_df.shape[0])
+        # stress + postlapse
+        trigg_stress_postlapse_df = trigg_stress_df[trigg_stress_df['isPreLapse'] == False]
+        trigg_stress_postlapse[id].append(trigg_stress_postlapse_df.shape[0])
+        # not_stress + prelapse
+        trigg_not_stress_prelapse_df = trigg_not_stress_df[trigg_not_stress_df['isPreLapse'] == True]
+        trigg_not_stress_prelapse[id].append(trigg_not_stress_prelapse_df.shape[0])
+        # not_stress + postlapse
+        trigg_not_stress_postlapse_df = trigg_not_stress_df[trigg_not_stress_df['isPreLapse'] == False]
+        trigg_not_stress_postlapse[id].append(trigg_not_stress_postlapse_df.shape[0])
+        num_decision_points = id_log_EMI_day[available_condition | unavailable_condition].shape[0]
+        num_available_decision_points = id_log_EMI_day[available_condition].shape[0]
+        num_int_triggered = id_log_EMI_day[int_triggered_condition].shape[0]
+        num_int_not_triggered = id_log_EMI_day[int_not_triggered_condition].shape[0]
+        decision_points[id].append(num_decision_points)
+        available_decision_points[id].append(num_available_decision_points)
+        ints_triggered[id].append(num_int_triggered) # ints_trig + ints_not_trig = avai_dec_points.
+        ints_not_triggered[id].append(num_int_not_triggered)
+        pre_lapse_rows = id_log_EMI_day[id_log_EMI_day['isPreLapse'] == True].shape[0]
+        post_lapse_rows = id_log_EMI_day[id_log_EMI_day['isPreLapse'] == False].shape[0]
+        pre_lapse_cond = pre_lapse_rows > 0
+        post_lapse_cond = post_lapse_rows > 0
+        if (pre_lapse_cond & (not post_lapse_cond)):
+            pre_lapse_val = 1
+        elif post_lapse_cond > 0:
+            pre_lapse_val = 0
+        else:
+            pre_lapse_val = np.nan
+        pre_lapse_day_vals[id].append(pre_lapse_val)
+        day = day + timedelta(days=1)
 
+# calculate median not missing data per day per id:
+
+median_not_missing_mins_frac = {}
+average_not_missing_mins_frac = {}
+for id in not_missing_mins_frac.keys():
+    median_not_missing_mins_frac[id] = []
+    average_not_missing_mins_frac[id] = []
+    for day in not_missing_mins_frac[id].keys():
+        median_val = round(np.median(not_missing_mins_frac[id][day]), 2)
+        average_val = round(np.mean(not_missing_mins_frac[id][day]), 2)
+        median_not_missing_mins_frac[id].append(median_val)
+        average_not_missing_mins_frac[id].append(average_val)
+
+average_per_id_not_missing_mins_frac = []
+for id in average_not_missing_mins_frac.keys(): 
+    average_per_id_not_missing_mins_frac.append(round(np.nanmean(average_not_missing_mins_frac[id]), 2))
 
 # What fraction of all available decision times is a user classified as being in the 
 # unknown episode category?
@@ -1044,7 +1235,7 @@ for id in participants_for_analysis:
         pre_lapse_day_vals[id].append(pre_lapse_val)
         day = day + timedelta(days=1)
 
-# calculate summarise for
+# calculate summaries for
 ##### 1. total stress mins
 ##### 2. total not stress mins
 ##### 3. total physically active mins

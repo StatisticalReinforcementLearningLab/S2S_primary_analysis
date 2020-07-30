@@ -72,5 +72,5 @@ episodes = episodes.drop_duplicates().reset_index(drop=True)
 
 # export dataset:
 
-wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/python_dfs/stress_episode_classification_df.csv"
-episodes.to_csv(wd_to_save)
+wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/stress_episode_classification_df.pkl"
+episodes.to_pickle(wd_to_save)

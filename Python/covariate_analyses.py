@@ -279,7 +279,6 @@ test_score = clf.score(X_test, y_test)
 print("train_score: ", train_score)
 print("test_score: ", test_score)
 
-
 import sklearn
 
 y_pred = clf.predict(X_test)

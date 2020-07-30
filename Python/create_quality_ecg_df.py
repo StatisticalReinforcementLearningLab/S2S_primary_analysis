@@ -69,5 +69,5 @@ quality_ecg = quality_ecg.drop_duplicates().reset_index(drop=True)
 
 # export dataset:
 
-wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/python_dfs/quality_ecg_df.csv"
-quality_ecg.to_csv(wd_to_save)
+wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/quality_ecg_df.pkl"
+quality_ecg.to_pickle(wd_to_save)

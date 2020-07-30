@@ -69,5 +69,5 @@ activity = activity.drop_duplicates().reset_index(drop=True)
 
 # export dataset:
 
-wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/python_dfs/activity_df.csv"
-activity.to_csv(wd_to_save)
+wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/activity_df.pkl"
+activity.to_pickle(wd_to_save)
