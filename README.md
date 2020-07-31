@@ -40,12 +40,6 @@ the missing data within the Sense2Stop MRT.
 
 ### 3.2 Covariate Analysis 
 
-Two sets of analyses were conducted to decide on the final set of covariates for 
-inclusion in the primary analysis: 
-
-- [Data analysis for justification of MAR (Python)]()
-- [Creating data frame for MAR data analysis (Python)]()
-
 Detailed documentation for these analyses is provided in [Covariate_Analyses.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Covariate_Analyses.pdf)
 
 ### 3.3 Primary Analysis Method
