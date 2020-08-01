@@ -47,10 +47,10 @@ the missing data within the Sense2Stop MRT.
 
 ### 3.2 Covariate Analysis 
 
-Detailed documentation for these analyses is provided in [Covariate_Analyses.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Covariate_Analyses.pdf)
+Detailed documentation for these analyses is provided in [Covariate_Analyses.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Covariate_Analyses.pdf).
 
 ### 3.3 Primary Analysis Method
-- [Supplementary file (Overleaf)](https://www.overleaf.com/4334158856hfhxpnmvcphz)
+- []
 
 ## 4. References 
 
