@@ -31,6 +31,13 @@ physical activity.
 - [create_quality_rep_df.py](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/Python/create_quality_rep_df.py) is a Python script used to create `~/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/quality_rep_df.pkl`, a cleaned dataset corresponding to REP quality.
 - [create_stress_episode_classification_df.py](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/Python/create_stress_episode_classification_df.py) is a Python script used to create `~/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/stress_episode_classification_df.pkl`, a cleaned dataset corresponding to stress episode classification.
 
+### 2.2 Code: Missing Data
+
+- [show_missing_data.py](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/Python/show_missing_data.py) is a Python script used to 
+show the extent of the missing data in the primary outcome. In addition, this script creates 
+a data frame that is used to run one of the covariate analyses in order to predict missing 
+episodes within the primary outcome. 
+
 ## 3. Primary Analysis
 
 ### 3.1 Missing Data 
