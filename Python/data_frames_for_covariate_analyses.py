@@ -525,7 +525,7 @@ for idVal in participants_for_analysis:
     mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
     id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
     id_activity = activity[activity['participant_id'] == idVal]
-    id_episodes = episodes[episodes['participant_id'] == idVal]
+    id_episodes = stress_episode_classifications[stress_episode_classifications['participant_id'] == idVal]
     day = mrt_id_start_day
     day_num = 1
     while day <= mrt_id_tenth_day:
@@ -700,7 +700,9 @@ for idVal in participants_for_analysis:
         day_num = day_num + 1
 
 # export dataset:
-var_reduc_data.to_csv('var_reduc_data_df.csv')
+
+wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/"
+var_reduc_data.to_pickle(wd_to_save + "var_reduc_data_df.pkl")
 
 var_reduc_data2 = pd.read_csv("var_reduc_data_df.csv") 
 

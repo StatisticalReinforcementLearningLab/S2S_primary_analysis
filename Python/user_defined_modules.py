@@ -36,3 +36,12 @@ def scatterplot(x_data, y_data, x_label, y_label, title):
     ax.set_xlim([min(id_df.date_time), max(id_df.date_time)])
     fig.autofmt_xdate()
 
+def get_part_of_day(hour):
+    return (
+        "morning" if 5 <= hour <= 11
+        else
+        "afternoon" if 12 <= hour <= 17
+        else
+        "evening" if 18 <= hour <= 22
+        else
+        "night")

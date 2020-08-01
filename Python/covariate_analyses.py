@@ -1,56 +1,64 @@
+# from dfply import *
+
+# from sklearn import preprocessing
+# from sklearn.feature_selection import RFE
+# # import matplotlib.pyplot as plt
+
+# from matplotlib.colors import ListedColormap
+
+# from sklearn.datasets import make_moons, make_circles, make_classification
+# from sklearn.neural_network import MLPClassifier
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.svm import SVC
+# from sklearn.gaussian_process import GaussianProcessClassifier
+# from sklearn.gaussian_process.kernels import RBF
+# from sklearn.tree import DecisionTreeClassifier
+# from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+# from sklearn.naive_bayes import GaussianNB
+# from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+# from sklearn.inspection import permutation_importance
+# from treeinterpreter import treeinterpreter as ti
+
+# h = .02  # step size in the mesh
+
+# bring in data:
+# data = pd.read_csv("missing_df.csv")
+# del data['Unnamed: 0']
+
 import numpy as np
 import pandas as pd
 from scipy import stats
-from dfply import *
-
-from sklearn import preprocessing
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-from sklearn.feature_selection import RFE
-# import matplotlib.pyplot as plt
-
-from matplotlib.colors import ListedColormap
-from sklearn.model_selection import train_test_split
+from user_defined_modules import get_part_of_day
 from sklearn.preprocessing import StandardScaler
-from sklearn.datasets import make_moons, make_circles, make_classification
-from sklearn.neural_network import MLPClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from sklearn.inspection import permutation_importance
+from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
-from treeinterpreter import treeinterpreter as ti
+from sklearn.linear_model import LogisticRegression
+import sklearn
 
-h = .02  # step size in the mesh
+# define data directories: 
+pickle_jar = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/"
+csv_files_dir = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/csv_files/"
 
-# bring in data:
-data = pd.read_csv("predict_missing_logistic_df.csv")
-del data['Unnamed: 0']
+missing_df = pd.read_pickle(pickle_jar + "missing_df.pkl")
+baseline_df = pd.read_csv(csv_files_dir + "baseline.csv")
 
-# add baseline covariates to data set:
-
-baseline = pd.read_csv("~/Desktop/baseline.csv")
+# add baseline_df to missing_df data set:
 
 df = pd.DataFrame(columns=['id', 'day', 'day_num', 'available_decision_point', 
        'available_decision_point_stress_episode', 'episode_type_miss',
        'episode_type_stress', 'episode_type_no_stress', 'episode_length', 'previous_episode_miss',
        'previous_episode_stress', 'previous_episode_no_stress', 'previous_episode_length',
        'prev_day_activity_prop', 'prev_day_bad_qual_rep_prop',
-       'prev_day_bad_qual_ecg_prop', 'num_ints_trig_prev_day', 'day1_bmi',
+       'prev_day_bad_qual_ecg_prop', 'num_ints_trig_prev_day', 'isRand', 'day1_bmi',
        'sex', 'age', 'age_smoke', 'fagerstromtotal'])
 
-id_list = list(data['id'].unique())
+id_list = list(missing_df['id'].unique())
 # re-code id with integers:
 id_count = 1
 for id in id_list:
-    df_to_append = data[data['id'] == id]
+    df_to_append = missing_df[missing_df['id'] == id]
     len_df_to_append = df_to_append.shape[0]
-    baseline_id = baseline[baseline['study_id'] == id]
+    baseline_id = baseline_df[baseline_df['study_id'] == id]
     df_to_append['day1_bmi'] = [float(baseline_id['day1_bmi'])]*len_df_to_append
     df_to_append['sex'] = [int(baseline_id['sex'])]*len_df_to_append
     df_to_append['age'] = [int(baseline_id['age'])]*len_df_to_append
@@ -60,7 +68,7 @@ for id in id_list:
     df = df.append(df_to_append)
     id_count = id_count + 1
 
-df = df.reset_index(drop=True)
+df = df.dropna().reset_index(drop=True)
 
 # remove outliers from data:
 
@@ -70,23 +78,16 @@ numeric_cols = ['episode_length', 'previous_episode_length', 'prev_day_activity_
 indices_to_remove = []
 for numeric_col in numeric_cols:
     inds = df.index[np.abs(stats.zscore(df[numeric_col])) >= 3].tolist()
+    print(inds)
     indices_to_remove = indices_to_remove + inds
 
-data_removed_outliers = df.drop(df.index[indices_to_remove])
+# remove duplicates: 
+final_indices_to_remove = list(dict.fromkeys(indices_to_remove))
 
-def get_part_of_day(hour):
-    return (
-        "morning" if 5 <= hour <= 11
-        else
-        "afternoon" if 12 <= hour <= 17
-        else
-        "evening" if 18 <= hour <= 22
-        else
-        "night")
+data_removed_outliers = df.drop(df.index[final_indices_to_remove])
 
+# we don't require day since we have day_num:
 del data_removed_outliers['day']
-
-# data_removed_outliers['episode_type'].value_counts()
 
 # create weekday variable, and time of day variable:
 data_removed_outliers['dec_point_datetime'] = pd.to_datetime(data_removed_outliers['available_decision_point'])
@@ -95,31 +96,6 @@ data_removed_outliers['weekday'] = [i.weekday() for i in data_removed_outliers['
 data_removed_outliers['hour_of_day'] = [i.hour for i in data_removed_outliers['dec_point_datetime']]
 data_removed_outliers['part_of_day'] = [get_part_of_day(i) for i in data_removed_outliers['hour_of_day']]
 del data_removed_outliers['dec_point_datetime']
-
-# how many hours in a day per id: 
-
-hour_diffs = {}
-uq_ids = list(data_removed_outliers['id'].unique())
-for id_val in uq_ids: 
-    print(id_val)
-    hour_diffs[id_val] = []
-    data_id = data_removed_outliers[data_removed_outliers['id'] == id_val]
-    for day_val in range(10): 
-        day_val_num = day_val + 1
-        data_id_day_hour = data_id[data_id['day_num'] == day_val_num].hour_of_day
-        max_hour = np.max(data_id_day_hour)
-        min_hour = np.min(data_id_day_hour)
-        hour_diff_val = max_hour - min_hour
-        print("    ", hour_diff_val)
-        hour_diffs[id_val].append(hour_diff_val)
-
-max_per_id = []
-for id_val in uq_ids:
-    max_per_id.append(np.nanmax(hour_diffs[id_val]))
-
-total_max = np.nanmax(max_per_id)
-# 12, aside from one outlier inside id 1's 10th day (in which case this is 23). Note to 
-# fix this for primary analysis.
 
 # Create dummy variables:
 cat_vars=['part_of_day']
@@ -139,16 +115,17 @@ data_final.columns.values
 data_final['episode_type'] = data_final['episode_type_miss'].astype('int')
 
 # remove nans for now:
-data_final = data_final.dropna()
+data_final = data_final.dropna().reset_index(drop=True)
+
+# remove extreme values from episode_length: 
+
+indices_to_remove = data_final.index[np.abs(stats.zscore(data_final.episode_length)) >= 3].tolist()
+final_df = data_final.drop(data_final.index[indices_to_remove])
 
 # create training/testing with balanced y in training:
-
-# find if any features in X are highly correlated and remove:
-# X.corr()
-
 # make sure dtypes are correct:
 
-X = data_final
+X = final_df
 del X['episode_type_miss']
 del X['episode_type_stress']
 del X['episode_type_no_stress']
@@ -166,6 +143,7 @@ convert_dict = {
    'prev_day_bad_qual_rep_prop': 'float64',
    'prev_day_bad_qual_ecg_prop': 'float64',
    'num_ints_trig_prev_day': 'int64',
+   'isRand': 'object',
    'day1_bmi': 'float64',
    'sex': 'object',
    'age': 'int64',
@@ -188,11 +166,11 @@ X[num_cols] = scaler.fit_transform(X[num_cols])
 
 del X['episode_type']
 
-y = data_final.loc[:, data_final.columns == 'episode_type']
+y = final_df.loc[:, final_df.columns == 'episode_type']
 y = y.astype('int')
 
-from imblearn.over_sampling import SMOTE
-os = SMOTE(random_state=0)
+# create training and testing set of data split 70/30:
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
 columns = X_train.columns
 
@@ -200,46 +178,46 @@ columns = X_train.columns
 # RUN GRID SEARCH ON KNN  #
 ###########################
 
-grid_params = {
-  'n_neighbors': [3,5,11,19],
-  'weights': ['uniform', 'distance'],
-  'metric': ['manhattan']
-}
+# grid_params = {
+#   'n_neighbors': [3,5,11,19],
+#   'weights': ['uniform', 'distance'],
+#   'metric': ['manhattan']
+# }
 
-gs = GridSearchCV(
-   KNeighborsClassifier(),
-   grid_params,
-   verbose = 1,
-   cv = 3,
-   n_jobs = -1,
-   scoring = 'recall'
-)
+# gs = GridSearchCV(
+#    KNeighborsClassifier(),
+#    grid_params,
+#    verbose = 1,
+#    cv = 3,
+#    n_jobs = -1,
+#    scoring = 'recall'
+# )
 
-gs_results = gs.fit(X_train, y_train.values.ravel())
-gs_results.best_score_
-gs_results.best_params_
+# gs_results = gs.fit(X_train, y_train.values.ravel())
+# gs_results.best_score_
+# gs_results.best_params_
 
-# Now run best model:
+# # Now run best model:
 
-clf = gs_results.best_estimator_
-clf.fit(X_train, y_train)
-train_score = clf.score(X_train, y_train)
-test_score = clf.score(X_test, y_test)
-print("train_score: ", train_score)
-print("test_score: ", test_score)
+# clf = gs_results.best_estimator_
+# clf.fit(X_train, y_train)
+# train_score = clf.score(X_train, y_train)
+# test_score = clf.score(X_test, y_test)
+# print("train_score: ", train_score)
+# print("test_score: ", test_score)
 
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
+# from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 
-y_pred = clf.predict(X_test)
-best_f1_KNN = recall_score(y_test, y_pred, average="macro")
-f1_score(y_test, y_pred, average="macro")
+# y_pred = clf.predict(X_test)
+# best_f1_KNN = recall_score(y_test, y_pred, average="macro")
+# f1_score(y_test, y_pred, average="macro")
 
-# perform permutation importance
-results = permutation_importance(clf, X_test, y_test, scoring='f1')
+# # perform permutation importance
+# results = permutation_importance(clf, X_test, y_test, scoring='f1')
 
-importances = pd.DataFrame({'feature': list(X_test.columns), 'mean_importances': list(results.importances_mean)})
-# Make sure to sort this by absolute value:
-importances_KNN = importances.reindex(importances.mean_importances.abs().sort_values(ascending = False).index)
+# importances = pd.DataFrame({'feature': list(X_test.columns), 'mean_importances': list(results.importances_mean)})
+# # Make sure to sort this by absolute value:
+# importances_KNN = importances.reindex(importances.mean_importances.abs().sort_values(ascending = False).index)
 
 # The permutation importance of a feature is calculated as follows.
 # First, a baseline metric, defined by scoring, is evaluated on a (potentially different)
@@ -279,13 +257,12 @@ test_score = clf.score(X_test, y_test)
 print("train_score: ", train_score)
 print("test_score: ", test_score)
 
-import sklearn
-
 y_pred = clf.predict(X_test)
 best_recall_LR = sklearn.metrics.recall_score(y_test, y_pred, average="weighted")
 best_f1_LR = sklearn.metrics.f1_score(y_test, y_pred, average="weighted")
 
-importance_vals = list(np.std(X_train, 0) * clf.coef_[0])
+# importance_vals = list(np.std(X_train, 0) * clf.coef_[0])
+importance_vals = list(clf.coef_[0])
 importances = pd.DataFrame({'feature': list(X_test.columns), 'mean_importances': list(importance_vals)})
 # Make sure to sort this by absolute value:
 importances_LR = importances.reindex(importances.mean_importances.abs().sort_values(ascending = False).index)
@@ -372,25 +349,6 @@ importances = pd.DataFrame({'feature': list(X_test.columns), 'mean_importances':
 # Make sure to sort this by absolute value:
 importances_DT = importances.reindex(importances.mean_importances.abs().sort_values(ascending = False).index)
 
-
-###############################################
-# RUN GRID SEARCH ON ...   #
-###############################################
-
-# try different classifiers:
-
-classifiers = [
-    SVC(kernel="linear", C=0.025),
-    SVC(gamma=2, C=1),
-    GaussianProcessClassifier(1.0 * RBF(1.0)),
-    MLPClassifier(alpha=1, max_iter=1000),
-    AdaBoostClassifier(),
-    GaussianNB(),
-    QuadraticDiscriminantAnalysis()]
-
-
-
-
 ##################################################################################
 # VARIANCE REDUCTION ANALYSIS: 
 # Run a model with the 2 variables for variance reduction and longitudinal minute 
@@ -398,8 +356,8 @@ classifiers = [
 ##################################################################################
 
 # bring in data:
-var_reduc_data = pd.read_csv("var_reduc_data_df.csv")
-del var_reduc_data['Unnamed: 0']
+
+var_reduc_data = pd.read_pickle(pickle_jar + "var_reduc_data_df.pkl")
 
 df = pd.DataFrame(columns=['id', 'day', 'daynum', 'available_decision_point',
                            'avai_dec_time_is_stress_vals', 'min_after_dec_point', 'prox_outcome',
@@ -415,7 +373,7 @@ for id in id_list:
     df = df.append(df_to_append)
     id_count = id_count + 1
 
-df = df.reset_index(drop=True)
+df = df.dropna().reset_index(drop=True)
 
 # remove outliers from data:
 
@@ -426,16 +384,6 @@ for numeric_col in numeric_cols:
     indices_to_remove = indices_to_remove + inds
 
 data_removed_outliers = df.drop(df.index[indices_to_remove])
-
-def get_part_of_day(hour):
-    return (
-        "morning" if 5 <= hour <= 11
-        else
-        "afternoon" if 12 <= hour <= 17
-        else
-        "evening" if 18 <= hour <= 22
-        else
-        "night")
 
 del data_removed_outliers['day']
 
@@ -477,21 +425,6 @@ X = data_final
 # filter to not include rows that have a missing prox outcome: 
 X = X.loc[X['prox_outcome'].isin(['detected-stressed', 'not-detected-stressed', 'physically_active'])]
 
-# convert_dict = {
-#     'id': 'int64',
-#     'daynum': 'int64',
-#     'avai_dec_time_is_stress_vals': 'object',
-#     'min_after_dec_point': 'int64',
-#     'prox_outcome': 'object',
-#     'mins_stressed_prior': 'int64',
-#     'mins_active_prior': 'int64',
-#     'weekday': 'object',
-#     'hour_of_day': 'int64',
-#     'part_of_day_afternoon': 'object',
-#     'part_of_day_evening': 'object',
-#     'part_of_day_morning': 'object',
-#     'part_of_day_night': 'object'}
-
 convert_dict = {
     'id': 'int64',
     'daynum': 'int64',
@@ -520,9 +453,7 @@ y = y.astype('object')
 
 del X['prox_outcome']
 
-os = SMOTE(random_state=0)
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
 columns = X_train.columns
 
 #######################################################
@@ -560,12 +491,43 @@ y_pred = clf.predict(X_test)
 sklearn.metrics.recall_score(y_test, y_pred, average="weighted")
 sklearn.metrics.f1_score(y_test, y_pred, average="weighted")
 
-importance_vals = list(np.std(X_train, 0) * clf.coef_[0])
+# "weighted" accounts for class imbalance by computing the average of
+#  binary metrics in which each class’s score is weighted by its presence 
+#  in the true data sample.
+
+sklearn.metrics.recall_score(y_test, y_pred, average=None)
+sklearn.metrics.f1_score(y_test, y_pred, average=None)
+
+
+# importance_vals = list(np.std(X_train, 0) * clf.coef_[0])
+importance_vals = list(clf.coef_[0])
 importances = pd.DataFrame({'feature': list(X_test.columns), 'mean_importances': list(importance_vals)})
 # Sort this by absolute value:
 importances_LR = importances.reindex(importances.mean_importances.abs().sort_values(ascending=False).index)
 
+#importing confusion matrix
+from sklearn.metrics import confusion_matrix
+confusion = confusion_matrix(y_test, y_pred)
+print('Confusion Matrix\n')
+print(confusion)
 
+#importing accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+print('\nAccuracy: {:.2f}\n'.format(accuracy_score(y_test, y_pred)))
 
+print('Micro Precision: {:.2f}'.format(precision_score(y_test, y_pred, average='micro')))
+print('Micro Recall: {:.2f}'.format(recall_score(y_test, y_pred, average='micro')))
+print('Micro F1-score: {:.2f}\n'.format(f1_score(y_test, y_pred, average='micro')))
 
+print('Macro Precision: {:.2f}'.format(precision_score(y_test, y_pred, average='macro')))
+print('Macro Recall: {:.2f}'.format(recall_score(y_test, y_pred, average='macro')))
+print('Macro F1-score: {:.2f}\n'.format(f1_score(y_test, y_pred, average='macro')))
 
+print('Weighted Precision: {:.2f}'.format(precision_score(y_test, y_pred, average='weighted')))
+print('Weighted Recall: {:.2f}'.format(recall_score(y_test, y_pred, average='weighted')))
+print('Weighted F1-score: {:.2f}'.format(f1_score(y_test, y_pred, average='weighted')))
+
+from sklearn.metrics import classification_report
+print('\nClassification Report\n')
+print(classification_report(y_test, y_pred, target_names=['detected-stressed', 
+                                                          'not-detected-stressed', 'physically_active']))
