@@ -1,6 +1,7 @@
 
 # Show the extent of missing data in the primary outcome 
-# for the Sense2Stop MRT. 
+# for the Sense2Stop MRT. Also, create a data set in order 
+# to predict missing episodes.
 
 # Last changed: 30 JUL 2020
 
@@ -388,7 +389,7 @@ np.sum([i & j for (i, j) in zip(isStressFalse, EpClassNoStress)])
 np.sum([i & j for (i, j) in zip(isStressFalse, EpClassUnknown)])
 np.sum([i & j for (i, j) in zip(isStressFalse, NoEpClass)])
 
-# How many hours in a user's day (accrding to their available decision times? 
+# How many hours in a user's day (according to their available decision times?)
 # Here, we also make use of the start and end time data:
 
 hours_in_day = {}
@@ -432,6 +433,73 @@ for idVal in participants_for_analysis:
     hours_in_day_per_id.append(np.nanmax(hours_in_day[idVal]))
 
 
+# Create dictionary that records for each id, for each day from day 0 to day 9:
+# - proportion good qual data previous day
+# - proportion good phone battery previous day
+# - proportion data available previous day
+# - proportion physical activity previous day
+
+bad_qual_ecg_props = {}
+bad_qual_rep_props = {}
+activity_props = {}
+for id in participants_for_analysis:
+    # start on the day before the first mrt day:
+    qual_id_start_day = mrt_start_day[id] - timedelta(days=1)
+    qual_id_tenth_day = qual_id_start_day + timedelta(days=9)
+    id_qual_ecg_full = quality_ecg[quality_ecg['participant_id'] == id]
+    id_qual_ecg_mrt = id_qual_ecg_full[(id_qual_ecg_full['date'] >= qual_id_start_day) & (id_qual_ecg_full['date'] <= qual_id_tenth_day)]
+    id_qual_rep_full = quality_rep[quality_rep['participant_id'] == id]
+    id_qual_rep_mrt = id_qual_rep_full[(id_qual_rep_full['date'] >= qual_id_start_day) & (id_qual_rep_full['date'] <= qual_id_tenth_day)]
+    id_activity_full = activity[activity['participant_id'] == id]
+    id_activity_mrt = id_activity_full[(id_activity_full['date'] >= qual_id_start_day) & (id_activity_full['date'] <= qual_id_tenth_day)]
+    # Check if participants have given start and end time of days:
+    # day_start_id = day_start[day_start['participant_id'] == id]
+    # day_start_id_mrt = day_start_id[day_start_id['date'] >= mrt_id_start_day]
+    # day_end_id = day_end[day_end['participant_id'] == id]
+    # day_end_id_mrt = day_end_id[day_end_id['date'] >= mrt_id_start_day]
+    #
+    day = qual_id_start_day
+    bad_qual_ecg_props[id] = []
+    bad_qual_rep_props[id] = []
+    activity_props[id] = []
+    print(id)
+    print("")
+    while day <=  qual_id_tenth_day:
+        id_qual_ecg_mrt_day = id_qual_ecg_mrt[id_qual_ecg_mrt['date'] == day].reset_index(drop=True)
+        num_rows_ecg = id_qual_ecg_mrt_day.shape[0]
+        #
+        id_qual_rep_mrt_day = id_qual_rep_mrt[id_qual_rep_mrt['date'] == day].reset_index(drop=True)
+        num_rows_rep = id_qual_rep_mrt_day.shape[0]
+        #
+        id_activity_mrt_day = id_activity_mrt[id_activity_mrt['date'] == day].reset_index(drop=True)
+        num_rows_act = id_activity_mrt_day.shape[0]
+        #
+        # every row is meant to give a qual measure for a 2 second period.
+        # So, num_rows /(60*60) = num hours of day.
+        if num_rows_ecg == 0:
+            string = 'Participant ' + str(id) + ' does not have any ECG Quality information on day ' + str(day_num)
+            print(string)
+            bad_qual_ecg_props[id].append(np.nan)
+        else:
+            prop_bad_qual_ecg = (id_qual_ecg_mrt_day[id_qual_ecg_mrt_day['event'] != 0.0].shape[0])/num_rows_ecg
+            bad_qual_ecg_props[id].append(round(prop_bad_qual_ecg,2))
+        #
+        if num_rows_rep == 0:
+            string = 'Participant ' + str(id) + ' does not have any RIP Quality information on day ' + str(day_num)
+            print(string)
+            bad_qual_rep_props[id].append(np.nan)
+        else:
+            prop_bad_qual_rep = (id_qual_rep_mrt_day[id_qual_rep_mrt_day['event'] != 0.0].shape[0])/num_rows_rep
+            bad_qual_rep_props[id].append(round(prop_bad_qual_rep,2))
+        #
+        if num_rows_act == 0:
+            string = 'Participant ' + str(id) + ' does not have any activity information on day ' + str(day_num)
+            print(string)
+            activity_props[id].append(np.nan)
+        else:
+            prop_act = (id_activity_mrt_day[id_activity_mrt_day['event'] == 1.0].shape[0])/num_rows_act
+            activity_props[id].append(round(prop_act,2))
+        day =  day + timedelta(days=1)
 
 # Create dataset for predicting missing minutes:
 
@@ -440,10 +508,10 @@ for idVal in participants_for_analysis:
 #     'prop_good_data', 'prop_good_data_previous_episode']
 # predict_missing_df = pd.DataFrame(columns = predict_missing_columns)
 
-# add percent good quality data previous day
-# add percent battery high previous day
+# Columns to consider as additions:
 # add has lapsed?
 # add number of prompts so far (perhaps burdened by prompts?)
+# add missing EMA? 
 
 predict_missing_df = pd.DataFrame()
 indexVal = 0
@@ -454,7 +522,7 @@ for idVal in participants_for_analysis:
     mrt_id_tenth_day = mrt_id_start_day + timedelta(days=9)
     id_log_EMI = logs[key_name][logs[key_name]['id'] == 'EMI']
     id_activity = activity[activity['participant_id'] == idVal]
-    id_episodes = episodes[episodes['participant_id'] == idVal]
+    id_episodes = stress_episode_classifications[stress_episode_classifications['participant_id'] == idVal]
     day = mrt_id_start_day
     day_num = 1 
     num_ints_trig_prev_day = 0  
@@ -474,10 +542,6 @@ for idVal in participants_for_analysis:
             available_decision_time_stress = list(available_dec_ponts['isStress'])
             for avai_dec_time, avai_dec_time_ep_type in zip(available_decision_times, available_decision_time_stress):
                 start_time = avai_dec_time
-                # start_time = pd.to_datetime(avai_dec_time).tz_localize('America/Chicago', ambiguous = 'NaT')
-                # if start_time == 'NaT':
-                #     start_time_localize = pd.to_datetime(avai_dec_time).tz_localize('Europe/London') # this localizes the timestamp.
-                #     start_time = pd.to_datetime(start_time_localize).tz_convert('America/Chicago') # this now converts the localized version to chicago timestamp.
                 end_time = start_time + timedelta(hours = 2)
                 id_episodes_day_2hour = id_episodes_day[(id_episodes_day['datetime_end'] >= start_time) & (id_episodes_day['datetime_start'] <= end_time)]
                 id_activity_day_2hour = id_activity_day[(id_activity_day['datetime'] >= start_time) & (id_activity_day['datetime'] <= end_time)]
@@ -514,9 +578,9 @@ for idVal in participants_for_analysis:
                                 elif prev_ep.event == 2.0:
                                     prev_ep_type = 'stress'
                                 elif prev_ep.event == 3.0:
-                                    df = id_activity_day[(id_activity_day['datetime'] >= prev_ep.datetime_start) & (id_activity_day['datetime'] <= prev_ep.datetime_end)]
+                                    df = id_activity_day[(id_activity_day['datetime'] >= prev_ep.datetime_start) & (id_activity_day['datetime'] <= prev_ep.datetime_peak)]
                                     active_mins = df[df['event'] == 1.0].shape[0]
-                                    if active_mins >= ((minute_rounder(prev_ep.datetime_end) - minute_rounder(prev_ep.datetime_start)).seconds//60)/2:
+                                    if active_mins >= ((minute_rounder(prev_ep.datetime_peak) - minute_rounder(prev_ep.datetime_start)).seconds//60)/2:
                                         # this unknown ep is due to activity:
                                         prev_ep_type = "physically_active"
                                     else:
@@ -598,7 +662,6 @@ for idVal in participants_for_analysis:
         day = day + timedelta(days=1)
         day_num = day_num + 1
                         
-
 missing_df = pd.DataFrame()
 missing_df['id'] = predict_missing_df['id']
 missing_df['day'] = predict_missing_df['day']
@@ -618,8 +681,21 @@ missing_df['prev_day_bad_qual_rep_prop'] = predict_missing_df['prev_day_bad_qual
 missing_df['prev_day_bad_qual_ecg_prop'] = predict_missing_df['prev_day_bad_qual_ecg_prop']
 missing_df['num_ints_trig_prev_day'] = predict_missing_df['num_ints_trig_prev_day']
 
+# now add column that notes whether current row is an available decision point or not (isRand): 
+
+isRand = []
+prev_avai_dec_time = 0
+for el in missing_df['available_decision_point']: 
+    if prev_avai_dec_time == el: 
+        isRand.append(0)
+        prev_avai_dec_time = el
+    else: 
+        isRand.append(1)
+        prev_avai_dec_time = el
+
+missing_df['isRand'] = isRand
+
 # export dataset:
-missing_df.to_csv('predict_missing_logistic_df.csv')
 
-
-
+wd_to_save = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/primary_analysis/data/pickle_jar/missing_df.pkl"
+missing_df.to_pickle(wd_to_save)
