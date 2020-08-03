@@ -38,6 +38,10 @@ show the extent of the missing data in the primary outcome. In addition, this sc
 a data frame that is used to run one of the covariate analyses in order to predict missing 
 episodes within the primary outcome. 
 
+### 2.3 Notes
+
+- [ema_emi_randomization_algorithm.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/ema_emi_randomization_algorithm.pdf)
+
 ## 3. Primary Analysis
 
 ### 3.1 Missing Data 
