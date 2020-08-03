@@ -464,6 +464,7 @@ for id in participants_for_analysis:
     activity_props[id] = []
     print(id)
     print("")
+    day_num = 1
     while day <=  qual_id_tenth_day:
         id_qual_ecg_mrt_day = id_qual_ecg_mrt[id_qual_ecg_mrt['date'] == day].reset_index(drop=True)
         num_rows_ecg = id_qual_ecg_mrt_day.shape[0]
@@ -500,6 +501,7 @@ for id in participants_for_analysis:
             prop_act = (id_activity_mrt_day[id_activity_mrt_day['event'] == 1.0].shape[0])/num_rows_act
             activity_props[id].append(round(prop_act,2))
         day =  day + timedelta(days=1)
+        day_num += 1
 
 # Create dataset for predicting missing minutes:
 
@@ -571,8 +573,12 @@ for idVal in participants_for_analysis:
                             if not id_episodes_day_2hour.iloc[0].datetime_start == prev_ep.datetime_end: 
                                 # this means that the previous episode is missing
                                 prev_ep_type = 'missing'
+                                prev_ep_end_time = id_episodes_day_2hour.iloc[0].datetime_start
+                                prev_ep_start_time = prev_ep.datetime_end
                             else: 
                                 # this means that the previous episode is not missing: 
+                                prev_ep_start_time = prev_ep.datetime_start
+                                prev_ep_end_time = prev_ep.datetime_end
                                 if prev_ep.event == 0.0:
                                     prev_ep_type = 'no_stress'
                                 elif prev_ep.event == 2.0:
@@ -585,14 +591,14 @@ for idVal in participants_for_analysis:
                                         prev_ep_type = "physically_active"
                                     else:
                                         prev_ep_type = "missing"
-                            prev_ep_length = (minute_rounder(prev_ep.datetime_end) - minute_rounder(prev_ep.datetime_start)).seconds//60
+                            prev_ep_length = (minute_rounder(prev_ep_end_time) - minute_rounder(prev_ep_start_time)).seconds//60
                             # record available_dec_time ep type and ep length: 
                             if avai_dec_time_ep_type: 
                                 available_decision_point_episode_type_val = "stress"
                             else: 
                                 available_decision_point_episode_type_val = "no_stress"
                             avai_dec_time_ep = id_episodes_day_2hour.iloc[0]
-                            avai_dec_time_ep_length_val = (minute_rounder(avai_dec_time) - minute_rounder(avai_dec_time_ep.datetime_start)).seconds//60
+                            avai_dec_time_ep_length_val = (minute_rounder(avai_dec_time_ep.datetime_peak) - minute_rounder(avai_dec_time_ep.datetime_start)).seconds//60
                         # Now start iterating through the episodes following the available decision time episode, whilst tracking missing minutes
                         # in-between until 120 minutes is up:
                         prev_end_time = id_episodes_day_2hour.iloc[0].datetime_start
@@ -601,7 +607,7 @@ for idVal in participants_for_analysis:
                                 # we have found a missing episode in-between prev and current row,
                                 # so count missing minutes:
                                 ep_type = "missing"
-                                ep_length = (minute_rounder(row.datetime_start) - minute_rounder(prev_end_time)).seconds//60
+                                # ep_length = (minute_rounder(row.datetime_start) - minute_rounder(prev_end_time)).seconds//60
                                 row_to_append = pd.DataFrame({
                                     'id': idVal,
                                     'day': day,
@@ -610,7 +616,6 @@ for idVal in participants_for_analysis:
                                     'available_decision_point_episode_type': available_decision_point_episode_type_val,
                                     'available_decision_point_episode_length': avai_dec_time_ep_length_val,
                                     'curr_ep_type': ep_type,
-                                    'curr_ep_length': ep_length,
                                     'previous_episode_type': prev_ep_type,
                                     'previous_episode_length': prev_ep_length,
                                     'prev_day_activity_prop': activity_props[idVal][day_num - 1],
@@ -619,12 +624,9 @@ for idVal in participants_for_analysis:
                                     'num_ints_trig_prev_day': num_ints_trig_prev_day}, index=[indexVal])
                                 indexVal = indexVal + 1
                                 predict_missing_df = predict_missing_df.append(row_to_append)
-                                prev_ep_type = ep_type
-                                prev_ep_length = ep_length
                                 prev_end_time = row.datetime_start
                             else: 
                                 # Now append current row info:
-                                ep_length = (minute_rounder(row.datetime_end) - minute_rounder(row.datetime_start)).seconds//60
                                 if row.event == 2.0:
                                     ep_type = "stress"
                                 elif row.event == 0.0:
@@ -645,7 +647,6 @@ for idVal in participants_for_analysis:
                                     'available_decision_point_episode_type': available_decision_point_episode_type_val,
                                     'available_decision_point_episode_length': avai_dec_time_ep_length_val,
                                     'curr_ep_type': ep_type,
-                                    'curr_ep_length': ep_length,
                                     'previous_episode_type': prev_ep_type,
                                     'previous_episode_length': prev_ep_length,
                                     'prev_day_activity_prop': activity_props[idVal][day_num - 1],
@@ -654,8 +655,6 @@ for idVal in participants_for_analysis:
                                     'num_ints_trig_prev_day': num_ints_trig_prev_day}, index=[indexVal])
                                 indexVal = indexVal + 1
                                 predict_missing_df = predict_missing_df.append(row_to_append)
-                                prev_ep_length = ep_length
-                                prev_ep_type = ep_type
                                 prev_end_time = row.datetime_end
                     # avai_dec_time_count += 1
         num_ints_trig_prev_day = id_log_EMI_day[int_triggered_condition].shape[0]
@@ -668,10 +667,10 @@ missing_df['day'] = predict_missing_df['day']
 missing_df['day_num'] = predict_missing_df['daynum']
 missing_df['available_decision_point'] = predict_missing_df['available_decision_point']
 missing_df['available_decision_point_stress_episode'] = np.where(predict_missing_df['available_decision_point_episode_type'] == 'stress', 1, 0)
+missing_df['available_decision_point_episode_length'] = predict_missing_df['available_decision_point_episode_length']
 missing_df['episode_type_miss'] = np.where(predict_missing_df['curr_ep_type'] == "missing", 1, 0)
-missing_df['episode_type_stress'] = np.where(predict_missing_df['curr_ep_type'] == "stress", 1, 0)
-missing_df['episode_type_no_stress'] = np.where(predict_missing_df['curr_ep_type'] == "no_stress", 1, 0)
-missing_df['episode_length'] = predict_missing_df['curr_ep_length']
+# missing_df['episode_type_stress'] = np.where(predict_missing_df['curr_ep_type'] == "stress", 1, 0)
+# missing_df['episode_type_no_stress'] = np.where(predict_missing_df['curr_ep_type'] == "no_stress", 1, 0)
 missing_df['previous_episode_miss'] = np.where(predict_missing_df['previous_episode_type'] == "missing", 1, 0)
 missing_df['previous_episode_stress'] = np.where(predict_missing_df['previous_episode_type'] == "stress", 1, 0)
 missing_df['previous_episode_no_stress'] = np.where(predict_missing_df['previous_episode_type'] == "no_stress", 1, 0)

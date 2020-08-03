@@ -25,6 +25,8 @@
 # data = pd.read_csv("missing_df.csv")
 # del data['Unnamed: 0']
 
+from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -45,8 +47,8 @@ baseline_df = pd.read_csv(csv_files_dir + "baseline.csv")
 # add baseline_df to missing_df data set:
 
 df = pd.DataFrame(columns=['id', 'day', 'day_num', 'available_decision_point', 
-       'available_decision_point_stress_episode', 'episode_type_miss',
-       'episode_type_stress', 'episode_type_no_stress', 'episode_length', 'previous_episode_miss',
+       'available_decision_point_stress_episode', 'available_decision_point_episode_length',
+       'episode_type_miss', 'previous_episode_miss',
        'previous_episode_stress', 'previous_episode_no_stress', 'previous_episode_length',
        'prev_day_activity_prop', 'prev_day_bad_qual_rep_prop',
        'prev_day_bad_qual_ecg_prop', 'num_ints_trig_prev_day', 'isRand', 'day1_bmi',
@@ -72,7 +74,7 @@ df = df.dropna().reset_index(drop=True)
 
 # remove outliers from data:
 
-numeric_cols = ['episode_length', 'previous_episode_length', 'prev_day_activity_prop',
+numeric_cols = ['previous_episode_length', 'prev_day_activity_prop',
   'prev_day_bad_qual_rep_prop', 'prev_day_bad_qual_ecg_prop', 'prev_day_bad_qual_ecg_prop',
   'num_ints_trig_prev_day', 'day1_bmi', 'sex', 'age', 'age_smoke', 'fagerstromtotal']
 indices_to_remove = []
@@ -83,7 +85,6 @@ for numeric_col in numeric_cols:
 
 # remove duplicates: 
 final_indices_to_remove = list(dict.fromkeys(indices_to_remove))
-
 data_removed_outliers = df.drop(df.index[final_indices_to_remove])
 
 # we don't require day since we have day_num:
@@ -119,7 +120,7 @@ data_final = data_final.dropna().reset_index(drop=True)
 
 # remove extreme values from episode_length: 
 
-indices_to_remove = data_final.index[np.abs(stats.zscore(data_final.episode_length)) >= 3].tolist()
+indices_to_remove = data_final.index[np.abs(stats.zscore(data_final.previous_episode_length)) >= 3].tolist()
 final_df = data_final.drop(data_final.index[indices_to_remove])
 
 # create training/testing with balanced y in training:
@@ -134,7 +135,7 @@ convert_dict = {
    'id': 'int64',
    'day_num': 'int64',
    'available_decision_point_stress_episode': 'object',
-   'episode_length': 'int64',
+   'available_decision_point_episode_length': 'float64',
    'previous_episode_miss': 'object',
    'previous_episode_stress': 'object',
    'previous_episode_no_stress': 'object',
@@ -266,6 +267,33 @@ importance_vals = list(clf.coef_[0])
 importances = pd.DataFrame({'feature': list(X_test.columns), 'mean_importances': list(importance_vals)})
 # Make sure to sort this by absolute value:
 importances_LR = importances.reindex(importances.mean_importances.abs().sort_values(ascending = False).index)
+
+from sklearn.metrics import confusion_matrix
+confusion = confusion_matrix(y_test, y_pred)
+print('Confusion Matrix\n')
+print(confusion)
+
+#importing accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+print('\nAccuracy: {:.2f}\n'.format(accuracy_score(y_test, y_pred)))
+
+print('Micro Precision: {:.2f}'.format(precision_score(y_test, y_pred, average='micro')))
+print('Micro Recall: {:.2f}'.format(recall_score(y_test, y_pred, average='micro')))
+print('Micro F1-score: {:.2f}\n'.format(f1_score(y_test, y_pred, average='micro')))
+
+print('Macro Precision: {:.2f}'.format(precision_score(y_test, y_pred, average='macro')))
+print('Macro Recall: {:.2f}'.format(recall_score(y_test, y_pred, average='macro')))
+print('Macro F1-score: {:.2f}\n'.format(f1_score(y_test, y_pred, average='macro')))
+
+print('Weighted Precision: {:.2f}'.format(precision_score(y_test, y_pred, average='weighted')))
+print('Weighted Recall: {:.2f}'.format(recall_score(y_test, y_pred, average='weighted')))
+print('Weighted F1-score: {:.2f}'.format(f1_score(y_test, y_pred, average='weighted')))
+
+from sklearn.metrics import classification_report
+print('\nClassification Report\n')
+print(classification_report(y_test, y_pred, target_names=['observed episode', 'missing episode']))
+
+
 
 ###############################################
 # RUN GRID SEARCH ON Random Forest Classifer  #
