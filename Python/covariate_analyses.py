@@ -44,6 +44,8 @@ csv_files_dir = "/Users/mariannemenictas/Box/MD2K Northwestern/Processed Data/pr
 missing_df = pd.read_pickle(pickle_jar + "missing_df.pkl")
 baseline_df = pd.read_csv(csv_files_dir + "baseline.csv")
 
+del missing_df['isRand']
+
 # add baseline_df to missing_df data set:
 
 df = pd.DataFrame(columns=['id', 'day', 'day_num', 'available_decision_point', 
@@ -51,7 +53,7 @@ df = pd.DataFrame(columns=['id', 'day', 'day_num', 'available_decision_point',
        'episode_type_miss', 'previous_episode_miss',
        'previous_episode_stress', 'previous_episode_no_stress', 'previous_episode_length',
        'prev_day_activity_prop', 'prev_day_bad_qual_rep_prop',
-       'prev_day_bad_qual_ecg_prop', 'num_ints_trig_prev_day', 'isRand', 'day1_bmi',
+       'prev_day_bad_qual_ecg_prop', 'num_ints_trig_prev_day', 'day1_bmi',
        'sex', 'age', 'age_smoke', 'fagerstromtotal'])
 
 id_list = list(missing_df['id'].unique())
@@ -128,8 +130,8 @@ final_df = data_final.drop(data_final.index[indices_to_remove])
 
 X = final_df
 del X['episode_type_miss']
-del X['episode_type_stress']
-del X['episode_type_no_stress']
+# del X['episode_type_stress']
+# del X['episode_type_no_stress']
 
 convert_dict = {
    'id': 'int64',
@@ -144,7 +146,6 @@ convert_dict = {
    'prev_day_bad_qual_rep_prop': 'float64',
    'prev_day_bad_qual_ecg_prop': 'float64',
    'num_ints_trig_prev_day': 'int64',
-   'isRand': 'object',
    'day1_bmi': 'float64',
    'sex': 'object',
    'age': 'int64',
