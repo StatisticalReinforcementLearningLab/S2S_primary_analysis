@@ -42,6 +42,8 @@ episodes within the primary outcome.
 
 - [ema_emi_randomization_algorithm.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/ema_emi_randomization_algorithm.pdf)
 
+- [Exploratory_Analyses.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Exploratory_Analyses.pdf)
+
 ## 3. Primary Analysis
 
 ### 3.1 Missing Data 

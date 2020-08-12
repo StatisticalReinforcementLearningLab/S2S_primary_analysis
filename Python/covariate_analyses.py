@@ -1,30 +1,3 @@
-# from dfply import *
-
-# from sklearn import preprocessing
-# from sklearn.feature_selection import RFE
-# # import matplotlib.pyplot as plt
-
-# from matplotlib.colors import ListedColormap
-
-# from sklearn.datasets import make_moons, make_circles, make_classification
-# from sklearn.neural_network import MLPClassifier
-# from sklearn.neighbors import KNeighborsClassifier
-# from sklearn.svm import SVC
-# from sklearn.gaussian_process import GaussianProcessClassifier
-# from sklearn.gaussian_process.kernels import RBF
-# from sklearn.tree import DecisionTreeClassifier
-# from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-# from sklearn.naive_bayes import GaussianNB
-# from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-# from sklearn.inspection import permutation_importance
-# from treeinterpreter import treeinterpreter as ti
-
-# h = .02  # step size in the mesh
-
-# bring in data:
-# data = pd.read_csv("missing_df.csv")
-# del data['Unnamed: 0']
-
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import numpy as np
