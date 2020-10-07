@@ -1,12 +1,11 @@
-# Last changed on: 5th Oct 2020
+
+# Last changed on: 7th Oct 2020
 # Last changed by: Marianne Menictas
 
-# load required libraries:
+# load required libraries and files:
 
-source("dgm.R")
-source("estimator.R")
-
-# library(tidyverse)
+source("dgm.r")
+source("estimator.r")
 library(foreach)
 library(doMC)
 library(doRNG)
@@ -37,13 +36,10 @@ data_generating_process <- dgm_trivariate_categorical_covariate
 max_cores <- 16
 registerDoMC(min(detectCores() - 1, max_cores))
 
-# sample_sizes <- c(30, 50, 100)
-sample_sizes <- 100
+sample_sizes <- c(30, 50, 100)
 num_days <- 10
 num_dec_points_per_day <- 3
-#######################
 nsim <- 2  #1000
-#######################
 
 control_vars <- "S"
 moderator_vars <- "X"
@@ -131,26 +127,3 @@ for (i_ss in 1:length(sample_sizes)) {
     
     result_df_collected <- rbind(result_df_collected, result_df)
 }
-
-# saveRDS(result_df_collected, file = "result_simulation_1.RDS")
-
-##### create tables for paper #####
-
-# library(reshape)
-# library(kableExtra)
-# library(knitr)
-
-# result_df_collected <- readRDS("result_simulation_1.RDS")
-
-# result_df_collected <- result_df_collected[, c(2, 1, 3:ncol(result_df_collected))]
-# result_df_collected$est <- factor(result_df_collected$est, c("e"))
-# result_df_collected <- result_df_collected[order(result_df_collected$est, result_df_collected$ss), ]
-
-# rownames(result_df_collected) <- NULL
-
-# result_df_collected$bias <- round(result_df_collected$bias, 3)
-# result_df_collected$sd <- round(result_df_collected$sd, 3)
-# result_df_collected$rmse <- round(result_df_collected$rmse, 3)
-# result_df_collected$cp.unadj <- round(result_df_collected$cp.unadj, 2)
-
-

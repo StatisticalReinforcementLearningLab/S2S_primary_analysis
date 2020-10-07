@@ -1,5 +1,5 @@
 
-# Last changed on: 23rd Sept 2020
+# Last changed on: 7th Oct 2020
 # Last changed by: Marianne Menictas
 
 # load required libraries:
@@ -8,11 +8,8 @@ library(dplyr)
 
 # set flags: 
 
-analytic_vs_numeric <- FALSE
-
-# sample_size <- 10 # number of users
-# num_days <- 10
-# num_dec_points_per_day <- 720 # 12 hours X 60 minutes
+test_range_y <- TRUE
+analytic_vs_numeric <- TRUE
 
 dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_points_per_day) {
 
@@ -82,7 +79,7 @@ dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_
 
 # try out the range of Y
 
-if (0) 
+if (test_range_y) 
 {
     set.seed(123)
 
@@ -97,8 +94,6 @@ if (0)
     summary(data$prob_Y3)
     summary(data$prob_A)
 }
-
-# compute marginal beta_trues
 
 if (analytic_vs_numeric) {
 
