@@ -412,21 +412,25 @@ for idVal in participants_for_analysis:
         int_not_triggered_condition = id_log_EMI_day['isTriggered'] == False
         available_dec_ponts = id_log_EMI_day[(int_triggered_condition) | (int_not_triggered_condition)]
         if available_dec_ponts.shape[0] > 0:
-            if id_start_times_day.shape[0] == 1: 
-                start_time_val = id_start_times_day.datetime.iloc[0]
-            else: 
-                start_time_val = np.min(available_dec_ponts.date_time)
-            if id_end_times_day.shape[0] == 1: 
-                end_time_val = id_end_times_day.datetime.iloc[0]
-            else: 
-                end_time_val = np.max(available_dec_ponts.date_time)
+            # if id_start_times_day.shape[0] == 1: 
+            #     start_time_val = id_start_times_day.datetime.iloc[0]
+            # else: 
+            start_time_val = np.min(available_dec_ponts.date_time)
+            # if id_end_times_day.shape[0] == 1: 
+            #     end_time_val = id_end_times_day.datetime.iloc[0]
+            # else: 
+            end_time_val = np.max(available_dec_ponts.date_time)
             time_diff = minute_rounder(end_time_val) - minute_rounder(start_time_val)
-            hours_in_day[idVal].append(round(time_diff.seconds/3600, 0))
+            hours_in_day_val = round(time_diff.seconds/3600, 0)
+            if hours_in_day_val > 12: 
+                print("  ", hours_in_day_val)
+            hours_in_day[idVal].append(hours_in_day_val)
         else: 
             hours_in_day[idVal].append(np.nan)
         day = day + timedelta(days=1)
 
 # find max hours in each user/day: 
+
 
 hours_in_day_per_id = []
 for idVal in participants_for_analysis:
