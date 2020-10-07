@@ -58,6 +58,11 @@ Detailed documentation for these analyses is provided in [Covariate_Analyses.pdf
 ### 3.3 Primary Analysis Method
 - []
 
+### 3.4 Consistency Simulation Code
+- Data generating model: [R/dgm.r](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/R/dgm.r)
+- Estimator: [R/estimiator.r](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/R/estimiator.r)
+- Simulation consistency: [R/simulation_consistency.r](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/R/simulation_consistency.r)
+
 ## 4. References 
 
 - [Sarker, H., Tyburski, M., Rahman, M.M., Hovsepian, K., Sharmin, M., Epstein, D.H., Preston, K.L., Furr-Holden, C.D., Milam, A., Nahum-Shani, I. and Al'Absi, M., 2016, May. Finding significant stress episodes in a discontinuous time series of rapidly varying mobile sensor data. In Proceedings of the 2016 CHI conference on human factors in computing systems (pp. 4489-4501). ACM.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5207658/pdf/nihms835269.pdf)
