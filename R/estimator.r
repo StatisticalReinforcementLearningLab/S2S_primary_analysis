@@ -48,9 +48,9 @@ estimating_equation <- function(
     Y <- dta[, outcome_varname]
     X_arrow <- cbind(X, 1 - X)
 
-    Xdm <- as.matrix( cbind( rep(1, nrow(dta)), dta[, moderator_varname] ) ) # X (moderator) design matrix, intercept added
-    Ldm <- as.matrix( cbind( rep(1, nrow(dta)), dta[, control_varname] ) ) # L (control) design matrix, intercept added
-    Zdm <- as.matrix( cbind( rep(1, nrow(dta)), dta[, miss_at_rand_varname] ) ) # Z (missing at random) design matrix, intercept added
+    Xdm <- as.matrix(dta[, moderator_varname]) # X (moderator) design matrix, intercept added
+    Ldm <- as.matrix(cbind(dta[, moderator_varname], dta[, control_varname])) # L (control) design matrix, intercept added
+    Zdm <- as.matrix(cbind(dta[, moderator_varname], dta[, miss_at_rand_varname])) # Z (missing at random) design matrix, intercept added
 
     g_M_Zdm <- Zdm
     g_Y_Zdm <- Ldm
@@ -247,16 +247,9 @@ estimating_equation <- function(
         X_id <- dta_id$X
         prob_A_id <- dta_id$prob_A
 
-        val1 <- 0  ;  val2 <- 0
-        for (t in 1:dps_per_id)
-        {
-            I_id_t <- I_id[t]
-            X_id_t <- X_id[t]
-            prob_A_id_t <- prob_A_id[t]
-
-            val1 <- val1 + I_id_t * as.numeric(X_id_t == 0) * (prob_A_id_t - rho_0)
-            val2 <- val2 + I_id_t * as.numeric(X_id_t == 1) * (prob_A_id_t - rho_1)
-        }
+        val1 <- sum(I_id * as.numeric(X_id == 0) * (prob_A_id - rho_0))
+        val2 <- sum(I_id * as.numeric(X_id == 1) * (prob_A_id - rho_1))
+        
         return(c(val1, val2))
     }
 

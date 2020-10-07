@@ -8,7 +8,7 @@ library(dplyr)
 
 # set flags: 
 
-test_range_y <- TRUE
+test_range_y <- FALSE
 analytic_vs_numeric <- TRUE
 
 dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_points_per_day) {
@@ -35,7 +35,7 @@ dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_
     
     for (t in 1:total_T) # looping through total dec points: 
     {
-        print(paste0("t: ", t))
+        # print(paste0("t: ", t))
         row_index <- seq(from = t, by = total_T, length = sample_size)
         
         # compute covariates: 
@@ -101,8 +101,7 @@ if (analytic_vs_numeric) {
     
     set.seed(123)
 
-    #sample_size <- 500000 # number of users
-    sample_size <- 1000 # number of users
+    sample_size <- 50000 # number of users
     num_days <- 10
     num_dec_points_per_day <- 3
 
