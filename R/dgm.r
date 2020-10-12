@@ -1,5 +1,5 @@
 
-# Last changed on: 7th Oct 2020
+# Last changed on: 12th Oct 2020
 # Last changed by: Marianne Menictas
 
 # load required libraries:
@@ -10,6 +10,12 @@ library(dplyr)
 
 test_range_y <- FALSE
 analytic_vs_numeric <- TRUE
+
+#############################
+sample_size <- 30
+num_days <- 10
+num_dec_points_per_day <- 3
+#############################
 
 dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_points_per_day) {
 
@@ -33,6 +39,33 @@ dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_
     data$day_dec_point <- rep(1:num_dec_points_per_day, times = num_days)
     data$total_dec_point <- rep(1:total_T, times = sample_size)
     
+    for (i in 1:sample_size)
+    {
+        row_index <- seq(from=((i-1) * total_T + 1), to = i * total_T)
+        
+        # compute covariates: 
+
+        data$S[row_index] <- sample(c(0,1,2), sample_size, replace = TRUE)
+        data$S2[row_index] <- ifelse(data$S[row_index] == 2, 1, 0) 
+        data$prob_A[row_index] <- rep(prob_a, sample_size)
+        data$A[row_index] <- rbinom(sample_size, 1, data$prob_A[row_index])
+        data$X[row_index] <- ifelse(data$S[row_index] == 0, 1, ifelse(data$S[row_index] == 1, 0, 0))
+
+        # following code only work for time_window = 2. TODO: Make for general m. 
+
+        data$prob_Y1[row_index] <- (0.2 * exp(data$A[row_index] * (beta_11_true * data$X[row_index] + beta_10_true * (1 - data$X[row_index])))
+                                        * exp(data$A[row_index] * (beta_11_true * data$X[row_index] + beta_10_true * (1 - data$X[row_index]))))
+        data$prob_Y2[row_index] <- 0.3 * exp(data$A[row_index] * (beta_21_true * data$X[row_index] + beta_20_true * (1 - data$X[row_index])))
+        data$prob_Y3[row_index] <- 1 - (data$prob_Y1[row_index] + data$prob_Y2[row_index])
+
+        Y <- extraDistr::rcat(
+            n = sample_size, 
+            p = cbind(data$prob_Y1[row_index], data$prob_Y2[row_index], data$prob_Y3[row_index]), 
+            labels = c(1, 2, 3)
+        )
+    }
+
+
     for (t in 1:total_T) # looping through total dec points: 
     {
         # print(paste0("t: ", t))
@@ -46,7 +79,8 @@ dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_
         data$A[row_index] <- rbinom(sample_size, 1, data$prob_A[row_index])
         data$X[row_index] <- ifelse(data$S[row_index] == 0, 1, ifelse(data$S[row_index] == 1, 0, 0))
 
-        data$prob_Y1[row_index] <- 0.2 * exp(data$A[row_index] * (beta_11_true * data$X[row_index] + beta_10_true * (1 - data$X[row_index])))
+        data$prob_Y1[row_index] <- (0.2 * exp(data$A[row_index] * (beta_11_true * data$X[row_index] + beta_10_true * (1 - data$X[row_index])))
+                                        * exp(data$A[row_index] * (beta_11_true * data$X[row_index] + beta_10_true * (1 - data$X[row_index]))))
         data$prob_Y2[row_index] <- 0.3 * exp(data$A[row_index] * (beta_21_true * data$X[row_index] + beta_20_true * (1 - data$X[row_index])))
         data$prob_Y3[row_index] <- 1 - (data$prob_Y1[row_index] + data$prob_Y2[row_index])
 

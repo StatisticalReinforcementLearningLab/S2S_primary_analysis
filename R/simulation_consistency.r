@@ -1,5 +1,5 @@
 
-# Last changed on: 7th Oct 2020
+# Last changed on: 12th Oct 2020
 # Last changed by: Marianne Menictas
 
 # load required libraries and files:
@@ -58,7 +58,7 @@ for (i_ss in 1:length(sample_sizes)) {
          
         fit_e <- estimating_equation(
             dta = dta,
-            time_window_for_Y = 2,
+            time_window_for_Y = 1,
             id_varname = "user_id",
             decision_time_varname = "total_dec_point",
             treatment_varname = "A",
