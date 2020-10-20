@@ -38,6 +38,11 @@ show the extent of the missing data in the primary outcome. In addition, this sc
 a data frame that is used to run one of the covariate analyses in order to predict missing 
 episodes within the primary outcome. 
 
+### 2.2 Code: Availability condtion for randomization
+
+- [MD2Korg/mCerebrum-Configuration](https://github.com/MD2Korg/mCerebrum-Configuration/tree/master/1.0/Northwestern/STU00201566/mCerebrum/org.md2k.ema_scheduler)
+
+
 ### 2.3 Notes
 
 - [ema_emi_randomization_algorithm.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/ema_emi_randomization_algorithm.pdf)
