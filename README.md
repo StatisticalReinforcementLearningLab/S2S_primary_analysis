@@ -70,3 +70,5 @@ Detailed documentation for these analyses is provided in [Covariate_Analyses.pdf
 - [Hovsepian, K., al'Absi, M., Ertin, E., Kamarck, T., Nakajima, M. and Kumar, S., 2015, September. cStress: towards a gold standard for continuous stress assessment in the mobile environment. In Proceedings of the 2015 ACM international joint conference on pervasive and ubiquitous computing (pp. 493-504). ACM.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4631393/pdf/nihms728674.pdf)
 
 - [Liao, P., Dempsey, W., Sarker, H., Hossain, S.M., Al'Absi, M., Klasnja, P. and Murphy, S., 2018. Just-in-Time but Not Too Much: Determining Treatment Timing in Mobile Health. Proceedings of the ACM on interactive, mobile, wearable and ubiquitous technologies, 2(4), p.179.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6380673/pdf/nihms-1004611.pdf)
+
+
