@@ -1,5 +1,5 @@
 
-# Last changed on: 19th Oct 2020
+# Last changed on: 24th Oct 2020
 # Last changed by: Marianne Menictas
 
 # load required libraries:
@@ -31,7 +31,7 @@ dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_
     xi_true <- -0.5
     eta_true <- -0.45
 
-    prob_a <- 0.2  # randomization probability
+    prob_a <- 0.2  # randomization probability 
     
     df_names <- c("user_id", "day", "day_dec_point", "total_dec_point", "Y", "Y1", "Y2", "Y3", "A", "S", 
                   "S2", "prob_Y1", "X", "prob_Y2", "prob_Y3", "prob_A", "M", "I")
@@ -61,28 +61,22 @@ dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_
         # TODO: Make for general m eventually. 
         ##############################
 
-        data$prob_Y1[row_index[1]] <-  NA
-        data$prob_Y2[row_index[1]] <-  NA
-        data$prob_Y3[row_index[1]] <-  NA
+        data$prob_Y1[row_index[1]] <-  0.2 * exp(data$A[1] * (beta_11_true * data$X[1] + beta_10_true * (1 - data$X[1])))
+        data$prob_Y2[row_index[1]] <-  0.3 * exp(data$A[1] * (beta_21_true * data$X[1] + beta_20_true * (1 - data$X[1])))
+        data$prob_Y3[row_index[1]] <-  1 - (data$prob_Y1[row_index[1]] + data$prob_Y2[row_index[1]])
 
-        data$prob_Y1[row_index[2]] <- 0.2 * exp(data$A[1] * (beta_11_true * data$X[1] + beta_10_true * (1 - data$X[1])))
-        data$prob_Y2[row_index[2]] <- 0.3 * exp(data$A[1] * (beta_21_true * data$X[1] + beta_20_true * (1 - data$X[1])))
-        data$prob_Y3[row_index[2]] <- 1 - (data$prob_Y1[row_index[2]] + data$prob_Y2[row_index[2]])
+        t_minus_1 <- row_index[-1]
+        t_minus_2 <- row_index[-total_T]
 
-        t_minus_1 <- row_index[-c(1, total_T)]
-        t_minus_2 <- row_index[-c(total_T, total_T-1)]
-
-        data$prob_Y1[row_index[-(1:2)]] <- (0.2 * exp(data$A[t_minus_1] * (beta_11_true * data$X[t_minus_1] + beta_10_true * (1 - data$X[t_minus_1])))
+        data$prob_Y1[row_index[-1]] <- (0.2 * exp(data$A[t_minus_1] * (beta_11_true * data$X[t_minus_1] + beta_10_true * (1 - data$X[t_minus_1])))
                                                 * exp(data$A[t_minus_2] * (beta_11_true * data$X[t_minus_2] + beta_10_true * (1 - data$X[t_minus_2]))))
-        data$prob_Y2[row_index[-(1:2)]] <- (0.15 * exp(data$A[t_minus_1] * (beta_21_true * data$X[t_minus_1] + beta_20_true * (1 - data$X[t_minus_1])))
+        data$prob_Y2[row_index[-1]] <- (0.15 * exp(data$A[t_minus_1] * (beta_21_true * data$X[t_minus_1] + beta_20_true * (1 - data$X[t_minus_1])))
                                                 * exp(data$A[t_minus_2] * (beta_21_true * data$X[t_minus_2] + beta_20_true * (1 - data$X[t_minus_2]))))
-        data$prob_Y3[row_index[-(1:2)]] <- 1 - (data$prob_Y1[row_index[-(1:2)]] + data$prob_Y2[row_index[-(1:2)]])
+        data$prob_Y3[row_index[-1]] <- 1 - (data$prob_Y1[row_index[-1]] + data$prob_Y2[row_index[-1]])
 
-        data$Y[row_index[1]] <- NA
-
-        data$Y[row_index[-1]] <- extraDistr::rcat(
-            n = total_T - 1, 
-            p = cbind(data$prob_Y1[row_index[-1]], data$prob_Y2[row_index[-1]], data$prob_Y3[row_index[-1]]), 
+        data$Y[row_index] <- extraDistr::rcat(
+            n = total_T, 
+            p = cbind(data$prob_Y1[row_index], data$prob_Y2[row_index], data$prob_Y3[row_index]), 
             labels = c(1, 2, 3)
         )
         
@@ -141,9 +135,9 @@ if (analytic_vs_numeric) {
     
     set.seed(123)
 
-    sample_size <- 500 # number of users
-    num_days <- 10
-    num_dec_points_per_day <- 10
+    sample_size <- 100 # number of users
+    num_days <- 30
+    num_dec_points_per_day <- 20
     total_dec_points <- num_days * num_dec_points_per_day
 
     data_model <- dgm_trivariate_categorical_covariate(sample_size, num_days, num_dec_points_per_day)
@@ -151,128 +145,91 @@ if (analytic_vs_numeric) {
     beta_true <- data_model[['beta_true']]
     dt = as.data.table(data)
 
-    data_0_t <- dt[X == 0 & A == 1]
-    data_0_c <- dt[X == 0 & A == 0]
-    data_1_t <- dt[X == 1 & A == 1]
-    data_1_c <- dt[X == 1 & A == 0]
+    denom_111 <- 0  ;  denom_110 <- 0   
+    denom_011 <- 0  ;  denom_010 <- 0   
+    denom_101 <- 0  ;  denom_100 <- 0   
+    denom_001 <- 0  ;  denom_000 <- 0   
+    numer_1111 <- 0  ;  numer_1101 <- 0   
+    numer_1110 <- 0  ;  numer_1100 <- 0   
+    numer_1011 <- 0  ;  numer_1001 <- 0   
+    numer_1010 <- 0  ;  numer_1000 <- 0   
+    numer_2111 <- 0  ;  numer_2101 <- 0   
+    numer_2110 <- 0  ;  numer_2100 <- 0   
+    numer_2011 <- 0  ;  numer_2001 <- 0   
+    numer_2010 <- 0  ;  numer_2000 <- 0   
 
-    exp_beta_10_t_vals <- NULL ; exp_beta_10_c_vals <- NULL 
-    exp_beta_11_t_vals <- NULL ; exp_beta_11_c_vals <- NULL 
-    exp_beta_20_t_vals <- NULL ; exp_beta_20_c_vals <- NULL
-    exp_beta_21_t_vals <- NULL ; exp_beta_21_c_vals <- NULL
-    
     for (id in 1:sample_size)
     {
-        print(paste0("id: ", id))
+        print(id)
         data_id <- dt[user_id == id]
 
-        data_id_10_t <- 0  ;  data_id_10_c <- 0
-        data_id_11_t <- 0  ;  data_id_11_c <- 0
-        data_id_20_t <- 0  ;  data_id_20_c <- 0
-        data_id_21_t <- 0  ;  data_id_21_c <- 0
-
-        data_0_t_id <- data_0_t[user_id == id]
-        data_0_c_id <- data_0_c[user_id == id]
-        data_1_t_id <- data_1_t[user_id == id]
-        data_1_c_id <- data_1_c[user_id == id]
-
         for (dp in 1:total_dec_points) 
-        { 
-            if (dp == 1 | dp == total_dec_points | dp == (total_dec_points - 1))
+        {
+            if (dp == 1)
                 next
+            
+            data_id_dp <- data_id[total_dec_point == dp]
+            data_id_dp_minus_one <- data_id[total_dec_point == (dp - 1)]
 
-            m_dps <- c(dp + 1, dp + 2)
-            Y_dp <- data_id$Y[dp]
+            Y_tplusone <- data_id_dp$Y
+            Xt <- data_id_dp$X
+            A_tminusone <- data_id_dp_minus_one$A
+            A_t <- data_id_dp$A
 
-            if (Y_dp == 1)
-            {
-                data_id_10_t <- data_0_t_id[total_dec_point %in% m_dps & Y1 == 1]$Y1
-                data_id_10_c <- data_0_c_id[total_dec_point %in% m_dps & Y1 == 1]$Y1
-                data_id_11_t <- data_1_t_id[total_dec_point %in% m_dps & Y1 == 1]$Y1
-                data_id_11_c <- data_1_c_id[total_dec_point %in% m_dps & Y1 == 1]$Y1
+            # X_t, A_tminusone, A_t
+            denom_111 <- denom_111 + as.numeric((Xt == 1) & (A_tminusone == 1) & (A_t == 1))
+            denom_110 <- denom_110 + as.numeric((Xt == 1) & (A_tminusone == 1) & (A_t == 0))
+            denom_011 <- denom_011 + as.numeric((Xt == 0) & (A_tminusone == 1) & (A_t == 1))
+            denom_010 <- denom_010 + as.numeric((Xt == 0) & (A_tminusone == 1) & (A_t == 0))
+            denom_101 <- denom_101 + as.numeric((Xt == 1) & (A_tminusone == 0) & (A_t == 1))
+            denom_100 <- denom_100 + as.numeric((Xt == 1) & (A_tminusone == 0) & (A_t == 0))
+            denom_001 <- denom_001 + as.numeric((Xt == 0) & (A_tminusone == 0) & (A_t == 1))
+            denom_000 <- denom_000 + as.numeric((Xt == 0) & (A_tminusone == 0) & (A_t == 0))
 
-                if (length(data_id_10_t) == 0)
-                    data_id_10_t <- rep(0, 2)
+            # Y == 1, X == 1
+            numer_1111 <- numer_1111 + as.numeric((Y_tplusone == 1) & (Xt == 1) & (A_tminusone == 1) & (A_t == 1))
+            numer_1101 <- numer_1101 + as.numeric((Y_tplusone == 1) & (Xt == 1) & (A_tminusone == 0) & (A_t == 1))
+            numer_1110 <- numer_1110 + as.numeric((Y_tplusone == 1) & (Xt == 1) & (A_tminusone == 1) & (A_t == 0))
+            numer_1100 <- numer_1100 + as.numeric((Y_tplusone == 1) & (Xt == 1) & (A_tminusone == 0) & (A_t == 0))
+            
+            # Y == 1, X == 0
+            numer_1011 <- numer_1011 + as.numeric((Y_tplusone == 1) & (Xt == 0) & (A_tminusone == 1) & (A_t == 1))
+            numer_1001 <- numer_1001 + as.numeric((Y_tplusone == 1) & (Xt == 0) & (A_tminusone == 0) & (A_t == 1))
+            numer_1010 <- numer_1010 + as.numeric((Y_tplusone == 1) & (Xt == 0) & (A_tminusone == 1) & (A_t == 0))
+            numer_1000 <- numer_1000 + as.numeric((Y_tplusone == 1) & (Xt == 0) & (A_tminusone == 0) & (A_t == 0))
 
-                if (length(data_id_10_c) == 0)
-                    data_id_10_c <- rep(0, 2)
+            # Y == 2, X == 1
+            numer_2111 <- numer_2111 + as.numeric((Y_tplusone == 2) & (Xt == 1) & (A_tminusone == 1) & (A_t == 1))
+            numer_2101 <- numer_2101 + as.numeric((Y_tplusone == 2) & (Xt == 1) & (A_tminusone == 0) & (A_t == 1))
+            numer_2110 <- numer_2110 + as.numeric((Y_tplusone == 2) & (Xt == 1) & (A_tminusone == 1) & (A_t == 0))
+            numer_2100 <- numer_2100 + as.numeric((Y_tplusone == 2) & (Xt == 1) & (A_tminusone == 0) & (A_t == 0))
 
-                if (length(data_id_11_t) == 0)
-                    data_id_11_t <- rep(0, 2)
-
-                if (length(data_id_11_c) == 0)
-                    data_id_11_c <- rep(0, 2)
-
-                if (length(data_id_10_t) == 1)
-                    data_id_10_t <- c(data_id_10_t, 0)
-
-                if (length(data_id_10_c) == 1)
-                    data_id_10_c <- c(data_id_10_c, 0)
-
-                if (length(data_id_11_t) == 1)
-                    data_id_11_t <- c(data_id_11_t, 0)
-
-                if (length(data_id_11_c) == 1)
-                    data_id_11_c <- c(data_id_11_c, 0)
-            }
-
-            exp_beta_10_t_vals <- c(exp_beta_10_t_vals, data_id_10_t)
-            exp_beta_10_c_vals <- c(exp_beta_10_c_vals, data_id_10_c)
-            exp_beta_11_t_vals <- c(exp_beta_11_t_vals, data_id_11_t)
-            exp_beta_11_c_vals <- c(exp_beta_11_c_vals, data_id_11_c)
-
-            if (Y_dp == 2)
-            {
-                data_id_20_t <- data_0_t_id[total_dec_point %in% m_dps & Y2 == 1]$Y2
-                data_id_20_c <- data_0_c_id[total_dec_point %in% m_dps & Y2 == 1]$Y2
-                data_id_21_t <- data_1_t_id[total_dec_point %in% m_dps & Y2 == 1]$Y2
-                data_id_21_c <- data_1_c_id[total_dec_point %in% m_dps & Y2 == 1]$Y2
-
-                if (length(data_id_20_t) == 0)
-                    data_id_20_t <- rep(0, 2)
-
-                if (length(data_id_20_c) == 0)
-                    data_id_20_c <- rep(0, 2)
-                
-                if (length(data_id_21_t) == 0)
-                    data_id_21_t <- rep(0, 2)
-
-                if (length(data_id_21_c) == 0)
-                    data_id_21_c <- rep(0, 2)
-
-                if (length(data_id_20_t) == 1)
-                    data_id_20_t <- c(data_id_20_t, 0)
-
-                if (length(data_id_20_c) == 1)
-                    data_id_20_c <- c(data_id_20_c, 0)
-                
-                if (length(data_id_21_t) == 1)
-                    data_id_21_t <- c(data_id_21_t, 0)
-
-                if (length(data_id_21_c) == 1)
-                    data_id_21_c <- c(data_id_21_c, 0)
-            }
-
-            exp_beta_20_t_vals <- c(exp_beta_20_t_vals, data_id_20_t)
-            exp_beta_20_c_vals <- c(exp_beta_20_c_vals, data_id_20_c)
-            exp_beta_21_t_vals <- c(exp_beta_21_t_vals, data_id_21_t)
-            exp_beta_21_c_vals <- c(exp_beta_21_c_vals, data_id_21_c)
+            # Y == 2, X == 0
+            numer_2011 <- numer_2011 + as.numeric((Y_tplusone == 2) & (Xt == 0) & (A_tminusone == 1) & (A_t == 1))
+            numer_2001 <- numer_2001 + as.numeric((Y_tplusone == 2) & (Xt == 0) & (A_tminusone == 0) & (A_t == 1))
+            numer_2010 <- numer_2010 + as.numeric((Y_tplusone == 2) & (Xt == 0) & (A_tminusone == 1) & (A_t == 0))
+            numer_2000 <- numer_2000 + as.numeric((Y_tplusone == 2) & (Xt == 0) & (A_tminusone == 0) & (A_t == 0))
         }
     }
-    
-    exp_beta_10_numer <- mean(exp_beta_10_t_vals)
-    exp_beta_10_denom <- mean(exp_beta_10_c_vals)
-    exp_beta_11_numer <- mean(exp_beta_11_t_vals)
-    exp_beta_11_denom <- mean(exp_beta_11_c_vals)
-    exp_beta_20_numer <- mean(exp_beta_20_t_vals)
-    exp_beta_20_denom <- mean(exp_beta_20_c_vals)
-    exp_beta_21_numer <- mean(exp_beta_21_t_vals)
-    exp_beta_21_denom <- mean(exp_beta_21_c_vals)
 
-    beta_10_hat <- log(exp_beta_10_numer / exp_beta_10_denom)
-    beta_11_hat <- log(exp_beta_11_numer / exp_beta_11_denom)
-    beta_20_hat <- log(exp_beta_20_numer / exp_beta_20_denom)
-    beta_21_hat <- log(exp_beta_21_numer / exp_beta_21_denom)
+    # Test numerically using Y_{tplusone}, i.e., where m = 1. Can test this also with m = 2. 
+
+    numer_11 <- (numer_1111 / denom_111) * 0.2 + (numer_1101 / denom_101) * 0.8
+    denom_11 <- (numer_1110 / denom_110) * 0.2 + (numer_1100 / denom_100) * 0.8
+
+    numer_10 <- (numer_1011 / denom_011) * 0.2 + (numer_1001 / denom_001) * 0.8
+    denom_10 <- (numer_1010 / denom_010) * 0.2 + (numer_1000 / denom_000) * 0.8
+
+    numer_21 <- (numer_2111 / denom_111) * 0.2 + (numer_2101 / denom_101) * 0.8
+    denom_21 <- (numer_2110 / denom_110) * 0.2 + (numer_2100 / denom_100) * 0.8
+
+    numer_20 <- (numer_2011 / denom_011) * 0.2 + (numer_2001 / denom_001) * 0.8
+    denom_20 <- (numer_2010 / denom_010) * 0.2 + (numer_2000 / denom_000) * 0.8 
+
+    beta_11_hat <- log(numer_11 / denom_11)
+    beta_10_hat <- log(numer_10 / denom_10)
+    beta_21_hat <- log(numer_21 / denom_21)
+    beta_20_hat <- log(numer_20 / denom_20)
 
     beta_11_true <- beta_true[1]
     beta_10_true <- beta_true[2]
@@ -291,8 +248,6 @@ if (analytic_vs_numeric) {
     colnames(compar_mat) <- c("true", "numerically", "ratio")
     print(compar_mat)
 }
-
-
 
 
 
