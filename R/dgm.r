@@ -10,14 +10,7 @@ library(data.table)
 # set flags: 
 
 test_range_y <- FALSE
-analytic_vs_numeric <- TRUE
-
-#############################
-# sample_size <- 30
-# num_days <- 10
-# num_dec_points_per_day <- 3
-# time_window_for_Y <- 2
-#############################
+analytic_vs_numeric <- FALSE
 
 dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_points_per_day, time_window_for_Y) {
 
@@ -135,9 +128,9 @@ if (analytic_vs_numeric) {
     
     set.seed(123)
 
-    sample_size <- 100 # number of users
-    num_days <- 30
-    num_dec_points_per_day <- 20
+    sample_size <- 400 # number of users
+    num_days <- 10
+    num_dec_points_per_day <- 10
     total_dec_points <- num_days * num_dec_points_per_day
 
     data_model <- dgm_trivariate_categorical_covariate(sample_size, num_days, num_dec_points_per_day)
@@ -251,3 +244,25 @@ if (analytic_vs_numeric) {
 
 
 
+
+
+    # nm <- c('sim_1', 'sim_2', 'sim_3', 'sim_4', 'sim_5', 'sim_6', 'sim_7', 'sim_8', 'sim_9', 'sim_10')
+    # estimates %>% 
+    #   dplyr::mutate(mean_beta_est = rowMeans(select(., sim_1, sim_2, sim_3, sim_4, sim_5, sim_6, sim_7, sim_8, sim_9, sim_10)), 
+    #                 sd_beta_est   = rowSds(as.matrix(.[nm]))) %>% 
+    #   dplyr::select(ss, beta_true, mean_beta_est, sd_beta_est)
+      
+
+#          ss    beta_true  mean_beta_est sd_beta_est
+# beta_10  100       0.3    0.73219574    0.06095904
+# beta_11  100       0.1    0.09799466    0.04211833
+# beta_20  100       0.4    0.94608234    0.08053777
+# beta_21  100       0.2    0.20721341    0.05663128
+# beta_10  200       0.3    0.74613585    0.04551376
+# beta_11  200       0.1    0.10560195    0.03663264
+# beta_20  200       0.4    0.93510711    0.04058724
+# beta_21  200       0.2    0.15905888    0.03080495
+# beta_10  300       0.3    0.75336714    0.04295278
+# beta_11  300       0.1    0.08078576    0.03384844
+# beta_20  300       0.4    0.94704583    0.05041064
+# beta_21  300       0.2    0.18009016    0.05773039

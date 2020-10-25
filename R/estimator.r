@@ -1,25 +1,25 @@
 
-# Last changed on: 12th Oct 2020
+# Last changed on: 25th Oct 2020
 # Last changed by: Marianne Menictas
 
 # load required libraries:
 
 library(rootSolve) # for solver function multiroot()
 
-# #############################################
-# dta = dta
-# time_window_for_Y = 2
-# id_varname = "user_id"
-# decision_time_varname = "total_dec_point"
-# treatment_varname = "A"
-# outcome_varname = "Y"
-# control_varname = "S"
-# miss_at_rand_varname = "S"
-# moderator_varname = "X"
-# rand_prob_varname = "prob_A"
-# avail_varname = "I"
-# missing_varname = "M"
-# #############################################
+# ##################################################
+# dta <- dta
+# time_window_for_Y <- 2
+# id_varname <- "user_id"
+# decision_time_varname <- "total_dec_point"
+# treatment_varname <- "A"
+# outcome_varname <- "Y"
+# control_varname <- control_vars
+# miss_at_rand_varname <- miss_at_rand_varnames
+# moderator_varname <- moderator_vars
+# rand_prob_varname <- "prob_A"
+# avail_varname <- NULL
+# missing_varname <- NULL
+##################################################
 
 estimating_equation <- function(
     dta,
@@ -57,12 +57,14 @@ estimating_equation <- function(
 
     if (is.null(avail_varname)) { 
         I <- rep(1, total_dps)
+        dta$I <- I
     } else {
         I <- dta[, avail_varname]
     }
 
     if (is.null(missing_varname)) {
         M <- rep(1, total_dps)
+        dta$M <- M
     } else { 
         M <- dta[, missing_varname]
     }
@@ -90,7 +92,7 @@ estimating_equation <- function(
         init_weight_val_id <- init_weight_val[id_inds]
         for (t in 1:dps_per_id)
         {
-            dta_id_m <- dta_id[(t+1):(t+time_window_for_Y-1),] %>% na.omit
+            dta_id_m <- dta_id[t:(t+time_window_for_Y-1),] %>% na.omit
             if (nrow(dta_id_m) > 0) {
                 weight <- c(weight, init_weight_val_id[t] * sum(as.numeric(dta_id_m$A == 0)/(1 - dta_id_m$prob_A)))
             }
@@ -136,7 +138,7 @@ estimating_equation <- function(
                 exp_ZXi_id_t <- exp_ZXi_id[t]
                 Zdm_id_t <- Zdm_id[t,]
 
-                M_id_t_plus_m <- M_id[(t+1):(t+time_window_for_Y)] %>% na.omit
+                M_id_t_plus_m <- M_id[t:(t+time_window_for_Y-1)] %>% na.omit
                 if (length(M_id_t_plus_m) > 0) 
                     eem_val_t <-  (I_id_t * W_id_t 
                        * (exp_AZEta_id_t * sum(M_id_t_plus_m) - exp_ZXi_id_t) 
@@ -150,7 +152,6 @@ estimating_equation <- function(
             eem_val_id <- cbind(eem_val_id, rowSums(eem_val))
         }
         eem_val_final <- apply(eem_val_id, 1, mean)
-        
         return(eem_val_final)
     }
     
@@ -162,7 +163,7 @@ estimating_equation <- function(
         },
         error = function(cond) 
         {
-            message("\nCatched error in multiroot inside estimating_equation_missingness():")
+            message("\nCaught error in multiroot inside estimating_equation_missingness():")
             message(cond)
             return(list(root = rep(NaN, 2 * ncol_Z), msg = cond, f.root = rep(NaN, 2 * ncol_Z)))
         }
@@ -216,8 +217,8 @@ estimating_equation <- function(
 
             Ldm_id_t <- Ldm_id[t,]
 
-            M_id_t_plus_m <- M_id[(t+1):(t+time_window_for_Y)] %>% na.omit
-            Y_t_plus_m <- Y_id[(t+1):(t+time_window_for_Y)] %>% na.omit
+            M_id_t_plus_m <- M_id[t:(t+time_window_for_Y-1)] %>% na.omit
+            Y_t_plus_m <- Y_id[t:(t+time_window_for_Y-1)] %>% na.omit
 
             if (length(M_id_t_plus_m) > 0) 
                 eeb_val_t <- (I_id_t * W_id_t * exp_ZXi_AZEta_id_t * sum(M_id_t_plus_m)
@@ -277,7 +278,7 @@ estimating_equation <- function(
         },
         error = function(cond) 
         {
-            message("\nCatched error in multiroot inside estimating_equation_rho():")
+            message("\nCaught error in multiroot inside estimating_equation_rho():")
             message(cond)
             return(list(root = rep(NaN, 2), msg = cond, f.root = rep(NaN, 2)))
         }
@@ -313,7 +314,7 @@ estimating_equation <- function(
         },
         error = function(cond) 
         {
-            message("\nCatched error in multiroot inside estimating_equation_beta():")
+            message("\nCaught error in multiroot inside estimating_equation_beta():")
             message(cond)
             return(list(root = rep(NaN, beta_dim + alpha_dim), msg = cond, f.root = rep(NaN, beta_dim + alpha_dim)))
         }
@@ -356,7 +357,7 @@ estimating_equation <- function(
             exp_gMZxi_id_t <- as.vector(exp(g_M_Zdm_id_t %*% xi))
             exp_ZXi_AZEta_id_t <- exp_ZXi_AZEta_id[t]
 
-            M_id_t_plus_m <- M_id[(t+1):(t+time_window_for_Y)] %>% na.omit
+            M_id_t_plus_m <- M_id[t:(t+time_window_for_Y-1)] %>% na.omit
 
             if (length(M_id_t_plus_m) > 0) 
                 U_M_id_t <- (I_id_t * W_id_t * (exp_AZEta_id_t * sum(M_id_t_plus_m) - exp_gMZxi_id_t) * 
@@ -407,8 +408,8 @@ estimating_equation <- function(
 
             exp_gMZxiAZEta_id_t <- as.vector(exp(- g_M_Zdm_id_t %*% xi - A_id_t * (Zdm_id_t %*% eta)))
 
-            M_id_t_plus_m <- M_id[(t+1):(t+time_window_for_Y)] %>% na.omit
-            Y_t_plus_m <- Y_id[(t+1):(t+time_window_for_Y)] %>% na.omit
+            M_id_t_plus_m <- M_id[t:(t+time_window_for_Y-1)] %>% na.omit
+            Y_t_plus_m <- Y_id[t:(t+time_window_for_Y-1)] %>% na.omit
 
             D_t <- rbind(cbind(g_Y_Zdm_id_t, matrix(0,2,1)), 
                          cbind(matrix(0,2,1), g_Y_Zdm_id_t), 
@@ -522,8 +523,8 @@ estimating_equation <- function(
                          cbind((A_id_t - p_x[X_id[t] + 1]) * X_id_t_arrow, matrix(0,2,1)), 
                          cbind(matrix(0,2,1), (A_id_t - p_x[X_id[t] + 1]) * X_id_t_arrow))
 
-            M_id_t_plus_m <- M_id[(t+1):(t+time_window_for_Y)] %>% na.omit
-            Y_t_plus_m <- Y_id[(t+1):(t+time_window_for_Y)] %>% na.omit
+            M_id_t_plus_m <- M_id[t:(t+time_window_for_Y-1)] %>% na.omit
+            Y_t_plus_m <- Y_id[t:(t+time_window_for_Y-1)] %>% na.omit
 
             if (length(M_id_t_plus_m) > 0)
             {
