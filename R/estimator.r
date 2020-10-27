@@ -432,7 +432,10 @@ estimating_equation <- function(
     U_id <- function(data, alpha, beta, eta, xi, rho, id) 
     {
         rho_0 <- rho[1]  ;  rho_1 <- rho[2]
-        U_id_val <- c(U_N_id(data, rho_0, rho_1, id), U_M_id(data, eta, xi), U_1_id(data, alpha, beta, eta, xi))
+        U_id_val <- c(U_N_id(data, rho_0, rho_1, id), 
+                      U_M_id(data, eta, xi), 
+                      U_1_id(data, alpha, beta, eta, xi)
+                     )
         return(U_id_val)
     }
 

@@ -49,6 +49,8 @@ episodes within the primary outcome.
 
 - [Exploratory_Analyses.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Exploratory_Analyses.pdf)
 
+- [Availability_for_randomization](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/img/availability_for_randomization.png)
+
 ## 3. Primary Analysis
 
 ### 3.1 Missing Data 
