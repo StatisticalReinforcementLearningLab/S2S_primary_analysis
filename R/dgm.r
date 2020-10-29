@@ -1,5 +1,5 @@
 
-# Last changed on: 24th Oct 2020
+# Last changed on: 29th Oct 2020
 # Last changed by: Marianne Menictas
 
 # load required libraries:
@@ -11,6 +11,66 @@ library(data.table)
 
 test_range_y <- FALSE
 analytic_vs_numeric <- FALSE
+
+# num_users <- 50 
+# num_dec_points <- 7200
+# num_min_prox <- 120 
+
+dgm_sam <- function(num_users, num_dec_points, num_min_prox) 
+{
+    c_val <- 0.45
+
+    beta_01 <- -0.5 * c_val 
+    beta_11 <- 0.5 * c_val 
+    beta_02 <- - c_val
+    beta_12 <- c_val
+
+    m_vals <- 1:num_min_prox
+
+    Y <- vector("list", length = num_users)
+    X <- vector("list", length = num_users)
+    A <- vector("list", length = num_users)
+
+    p_X <- 0.2 
+    p_A <- 0.5
+
+    for (i in 1:num_users) 
+    {
+        print(paste0("i: ", i))
+
+        X[[i]] <- rbinom(n = num_dec_points, size = 1, prob = p_X)
+        A[[i]] <- rbinom(n = num_dec_points, size = 1, prob = p_A) 
+
+        p_stress_0 <- function(X) { 0.5 * exp(-(m_vals - 1)) * (0.5 * X + 0.25 * (1 - X)) }
+        p_phys_0 <- function(X) { 0.5 * exp(-(num_min_prox - m_vals)) * (0.25 * X + 0.5 * (1 - X)) }
+
+        p_stress_0_mat <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_stress_0)
+        p_phys_0_mat <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_phys_0)
+        p_no_stress_0_mat <- 1 - (p_stress_0_mat + p_phys_0_mat)
+
+        exp_beta1 <- function(X) { exp(beta_01 + beta_11 * X) }
+        exp_beta2 <- function(X) { exp(beta_02 + beta_12 * X) }
+
+        p_stress_1_mat <- p_stress_0_mat * apply(X = as.array(X[[i]]), MARGIN = 1, FUN = exp_beta1)
+        p_phys_1_mat <- p_phys_0_mat * apply(X = as.array(X[[i]]), MARGIN = 1, FUN = exp_beta2)
+        p_no_stress_1_mat <- 1 - (p_stress_1_mat + p_phys_1_mat)
+
+        cat_fun <- function(A, B, C)
+            extraDistr::rcat(n = num_min_prox, p = cbind(A, B, C), labels = c(1,2,3))
+    
+        Y[[i]] <- sapply(1:num_dec_points, 
+            function(t) {
+                val_A0 <- extraDistr::rcat(n = num_min_prox, p = cbind(p_stress_0_mat[,t], p_phys_0_mat[,t], p_no_stress_0_mat[,t]), labels = c(1,2,3))
+                val_A0_num <- as.numeric(val_A0)
+                val_A1 <- extraDistr::rcat(n = num_min_prox, p = cbind(p_stress_1_mat[,t], p_phys_1_mat[,t], p_no_stress_1_mat[,t]), labels = c(1,2,3))
+                val_A1_num <- as.numeric(val_A1)
+                res <- ((1 - A[[i]][t]) * val_A0_num) + (A[[i]][t] * val_A1_num)
+            })
+    }
+
+    data <- list(Y = Y, X = X, A = A, p_A = p_A, p_X = p_X)
+    return(data)
+}
 
 dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_points_per_day, time_window_for_Y) {
 
