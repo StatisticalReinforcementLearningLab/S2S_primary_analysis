@@ -7,16 +7,18 @@
 library(rootSolve) # for solver function multiroot()
 
 # ##################################################
+# source("dgm.r")
+# dgm <- dgm_trivariate_categorical_covariate(
+#     sample_size = 100, 
+#     total_T = 100, 
+#     time_window_for_Y = 2
+# )
+# dta <- dgm[['data']]
 # dta <- dta
 # time_window_for_Y <- 2
-# id_varname <- "user_id"
-# decision_time_varname <- "total_dec_point"
-# treatment_varname <- "A"
-# outcome_varname <- "Y"
-# control_varname <- control_vars
-# miss_at_rand_varname <- miss_at_rand_varnames
-# moderator_varname <- moderator_vars
-# rand_prob_varname <- "prob_A"
+# control_varname = "S"
+# miss_at_rand_varname = "S"
+# moderator_varname = "X"
 # avail_varname <- NULL
 # missing_varname <- NULL
 ##################################################
@@ -24,28 +26,23 @@ library(rootSolve) # for solver function multiroot()
 estimating_equation <- function(
     dta,
     time_window_for_Y = 2,
-    id_varname,
-    decision_time_varname,
-    treatment_varname,
-    outcome_varname,
     control_varname,
     miss_at_rand_varname,
     moderator_varname,
-    rand_prob_varname,
     avail_varname = NULL,
     missing_varname = NULL
 )
 {
     ### 1. preparation ###
 
-    sample_size <- length(unique(dta[, id_varname]))
+    sample_size <- length(unique(dta[, "user_id"]))
     dps_per_id <- nrow(dta[dta$user_id == 1, ])
     total_dps <- nrow(dta)
     
     X <- dta[, moderator_varname]
-    A <- dta[, treatment_varname]
-    prob_A <- dta[, rand_prob_varname]
-    Y <- dta[, outcome_varname]
+    A <- dta[, "A"]
+    prob_A <- dta[, "prob_A"]
+    Y <- dta[, "Y"]
     X_arrow <- cbind(X, 1 - X)
 
     Xdm <- as.matrix(dta[, moderator_varname]) # X (moderator) design matrix, intercept added
@@ -77,8 +74,8 @@ estimating_equation <- function(
 
     # 2.1 Step 1: Form the marginalization weights:
 
-    p_x0 <- mean(sum(I * as.numeric(X == 0) * A)) / mean(sum(I * as.numeric(X == 0)))
-    p_x1 <- mean(sum(I * as.numeric(X == 1) * A)) / mean(sum(I * as.numeric(X == 1)))
+    p_x0 <- mean(sum(I * as.numeric(X == 0) * prob_A)) / mean(sum(I * as.numeric(X == 0)))
+    p_x1 <- mean(sum(I * as.numeric(X == 1) * prob_A)) / mean(sum(I * as.numeric(X == 1)))
     p_x <- c(p_x0, p_x1)
 
     p_X <- unlist(lapply(X, function(i){p_x[i+1]}))
@@ -140,8 +137,7 @@ estimating_equation <- function(
 
                 M_id_t_plus_m <- M_id[t:(t+time_window_for_Y-1)] %>% na.omit
                 if (length(M_id_t_plus_m) > 0) 
-                    eem_val_t <-  (I_id_t * W_id_t 
-                       * (exp_AZEta_id_t * sum(M_id_t_plus_m) - exp_ZXi_id_t) 
+                    eem_val_t <- (sum(I_id_t * W_id_t * (exp_AZEta_id_t * M_id_t_plus_m - exp_ZXi_id_t))
                        * c(Zdm_id_t, (A_id[t] - p_x[X_id[t] + 1]) * Zdm_id_t))
 
                 if (length(M_id_t_plus_m) == 0)

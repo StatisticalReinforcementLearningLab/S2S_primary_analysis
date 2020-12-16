@@ -1,6 +1,6 @@
 
-# Last changed on: 29th Oct 2020
-# Last changed by: Marianne Menictas
+# Last changed on: 29th Nov 2020
+# Last changed by: Marianne
 
 # load required libraries:
 
@@ -11,15 +11,21 @@ library(data.table)
 
 test_range_y <- FALSE
 analytic_vs_numeric <- FALSE
+test_dgm_sam <- FALSE
 
-# num_users <- 50 
-# num_dec_points <- 7200
+# # #################################
+# num_users <- 100
+# num_dec_points <- 100
 # num_min_prox <- 120 
+# c_val <- 1
 
-dgm_sam <- function(num_users, num_dec_points, num_min_prox) 
+# pretend that every day is a decision point 
+# 100 days 
+# 120 minutes after each decision point is the proximal window
+#################################
+
+dgm_sam <- function(num_users, num_dec_points, num_min_prox, c_val) 
 {
-    c_val <- 0.45
-
     beta_01 <- -0.5 * c_val 
     beta_11 <- 0.5 * c_val 
     beta_02 <- - c_val
@@ -34,67 +40,121 @@ dgm_sam <- function(num_users, num_dec_points, num_min_prox)
     p_X <- 0.2 
     p_A <- 0.5
 
+    id <- NULL
+
+    p_stress_1 <- vector("list", length = num_users)
+    p_phys_1 <- vector("list", length = num_users)
+    p_no_stress_1 <- vector("list", length = num_users)
+
+    p_stress_0 <- vector("list", length = num_users)
+    p_phys_0 <- vector("list", length = num_users)
+    p_no_stress_0 <- vector("list", length = num_users)
+
     for (i in 1:num_users) 
     {
         print(paste0("i: ", i))
 
-        X[[i]] <- rbinom(n = num_dec_points, size = 1, prob = p_X)
-        A[[i]] <- rbinom(n = num_dec_points, size = 1, prob = p_A) 
+        X[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_X)
+        A[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_A) 
 
-        p_stress_0 <- function(X) { 0.5 * exp(-(m_vals - 1)) * (0.5 * X + 0.25 * (1 - X)) }
-        p_phys_0 <- function(X) { 0.5 * exp(-(num_min_prox - m_vals)) * (0.25 * X + 0.5 * (1 - X)) }
+        p_stress_0_fun <- function(X) { 0.5 * exp(-(m_vals - 1)) * (0.5 * X + 0.25 * (1 - X)) }
+        p_phys_0_fun <- function(X) { 0.5 * exp(-(num_min_prox - m_vals)) * (0.25 * X + 0.5 * (1 - X)) }
 
-        p_stress_0_mat <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_stress_0)
-        p_phys_0_mat <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_phys_0)
-        p_no_stress_0_mat <- 1 - (p_stress_0_mat + p_phys_0_mat)
+        p_stress_0[[i]] <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_stress_0_fun)
+        p_phys_0[[i]] <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_phys_0_fun)
+        p_no_stress_0[[i]] <- 1 - (p_stress_0[[i]] + p_phys_0[[i]])
 
-        exp_beta1 <- function(X) { exp(beta_01 + beta_11 * X) }
-        exp_beta2 <- function(X) { exp(beta_02 + beta_12 * X) }
+        exp_beta1 <- exp(beta_01 * (1 - X[[i]]) + beta_11 * X[[i]])
+        exp_beta2 <- exp(beta_02 * (1 - X[[i]]) + beta_12 * X[[i]])
 
-        p_stress_1_mat <- p_stress_0_mat * apply(X = as.array(X[[i]]), MARGIN = 1, FUN = exp_beta1)
-        p_phys_1_mat <- p_phys_0_mat * apply(X = as.array(X[[i]]), MARGIN = 1, FUN = exp_beta2)
-        p_no_stress_1_mat <- 1 - (p_stress_1_mat + p_phys_1_mat)
+        p_stress_1[[i]] <- p_stress_0[[i]] %*% diag(exp_beta1) 
+        p_phys_1[[i]] <- p_phys_0[[i]] %*% diag(exp_beta2)
+        p_no_stress_1[[i]] <- 1 - (p_stress_1[[i]] + p_phys_1[[i]])
 
         cat_fun <- function(A, B, C)
             extraDistr::rcat(n = num_min_prox, p = cbind(A, B, C), labels = c(1,2,3))
     
         Y[[i]] <- sapply(1:num_dec_points, 
             function(t) {
-                val_A0 <- extraDistr::rcat(n = num_min_prox, p = cbind(p_stress_0_mat[,t], p_phys_0_mat[,t], p_no_stress_0_mat[,t]), labels = c(1,2,3))
-                val_A0_num <- as.numeric(val_A0)
-                val_A1 <- extraDistr::rcat(n = num_min_prox, p = cbind(p_stress_1_mat[,t], p_phys_1_mat[,t], p_no_stress_1_mat[,t]), labels = c(1,2,3))
-                val_A1_num <- as.numeric(val_A1)
-                res <- ((1 - A[[i]][t]) * val_A0_num) + (A[[i]][t] * val_A1_num)
+                val_A0 <- as.numeric(cat_fun(p_stress_0[[i]][,t], p_phys_0[[i]][,t], p_no_stress_0[[i]][,t]))
+                val_A1 <- as.numeric(cat_fun(p_stress_1[[i]][,t], p_phys_1[[i]][,t], p_no_stress_1[[i]][,t]))
+                res <- ((1 - A[[i]][t]) * val_A0) + (A[[i]][t] * val_A1)
             })
+
+        id <- c(id, rep(i, num_dec_points))
     }
 
-    data <- list(Y = Y, X = X, A = A, p_A = p_A, p_X = p_X)
+    data <- list(
+        id = id, 
+        Y = Y, 
+        X = X, 
+        A = A, 
+        p_A = p_A, 
+        p_X = p_X, 
+        p_stress_0 = p_stress_0, 
+        p_phys_0 = p_phys_0, 
+        p_no_stress_0 = p_no_stress_0, 
+        p_stress_1 = p_stress_1, 
+        p_phys_1 = p_phys_1, 
+        p_no_stress_1 = p_no_stress_1, 
+        beta_01_true = beta_01, 
+        beta_11_true = beta_11, 
+        beta_02_true = beta_02, 
+        beta_12_true = beta_12
+    )
+
     return(data)
 }
 
-dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_points_per_day, time_window_for_Y) {
+if (test_dgm_sam)
+{
+    num_users <- 10
+    num_dec_points <- 1000
+    num_min_prox <- 120 
+    c_val <- 1
 
-    total_T <- num_days * num_dec_points_per_day
+    data <- dgm_sam(num_users, num_dec_points, num_min_prox, c_val) 
+
+    for (i in 1:num_users)
+    {
+        if (i == 1)
+        {
+            print(paste0("i: ", i))
+
+            print(summary(as.vector(data[['p_stress_0']][[i]])))
+            print(summary(as.vector(data[['p_phys_0']][[i]])))
+            print(summary(as.vector(data[['p_no_stress_0']][[i]])))
+            print(summary(as.vector(data[['p_stress_1']][[i]])))
+            print(summary(as.vector(data[['p_phys_1']][[i]])))
+            print(summary(as.vector(data[['p_no_stress_1']][[i]])))  
+        }
+    }
+
+    print(data[['beta_01_true']])
+    print(data[['beta_11_true']])
+    print(data[['beta_02_true']])
+    print(data[['beta_12_true']])
+}
+
+dgm_trivariate_categorical_covariate <- function(sample_size, total_T, time_window_for_Y) {
 
     beta_11_true <- 0.1
     beta_10_true <- 0.3
     beta_21_true <- 0.2
     beta_20_true <- 0.4
 
-    xi_true <- -0.5
-    eta_true <- -0.45
+    # xi_true <- -0.5
+    # eta_true <- -0.45
 
     prob_a <- 0.2  # randomization probability 
-    
-    df_names <- c("user_id", "day", "day_dec_point", "total_dec_point", "Y", "Y1", "Y2", "Y3", "A", "S", 
-                  "S2", "prob_Y1", "X", "prob_Y2", "prob_Y3", "prob_A", "M", "I")
+
+    df_names <- c("user_id", "day", "total_dec_point", "Y", "Y1", "Y2", "Y3", "A", "S", 
+                  "prob_Y1", "X", "prob_Y2", "prob_Y3", "prob_A", "M", "I")
     
     data <- data.frame(matrix(NA, nrow = sample_size * total_T, ncol = length(df_names)))
     names(data) <- df_names
     
     data$user_id <- rep(1:sample_size, each = total_T)
-    data$day <- rep(1:num_days, each = num_dec_points_per_day)
-    data$day_dec_point <- rep(1:num_dec_points_per_day, times = num_days)
     data$total_dec_point <- rep(1:total_T, times = sample_size)
     
     for (i in 1:sample_size)
@@ -104,7 +164,6 @@ dgm_trivariate_categorical_covariate <- function(sample_size, num_days, num_dec_
         # compute covariates: 
 
         data$S[row_index] <- sample(c(0,1,2), total_T, replace = TRUE)
-        data$S2[row_index] <- ifelse(data$S[row_index] == 2, 1, 0) 
         data$prob_A[row_index] <- rep(prob_a, total_T)
         data$A[row_index] <- rbinom(total_T, 1, data$prob_A[row_index])
         data$X[row_index] <- ifelse(data$S[row_index] == 0, 1, ifelse(data$S[row_index] == 1, 0, 0))
