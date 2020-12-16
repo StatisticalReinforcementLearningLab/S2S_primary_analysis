@@ -7,17 +7,17 @@
 library(rootSolve) # for solver function multiroot()
 
 ########################################################
-# source("dgm.r")
+source("dgm.r")
 
-# num_users <- 25
-# num_dec_points <- 100
-# num_min_prox <- 120 
+num_users <- 25
+num_dec_points <- 100
+num_min_prox <- 120 
 
-# set.seed(12323)
+set.seed(12323)
 
-# dta <- dgm_sam(num_users, num_dec_points, num_min_prox, c_val = 1)
-# M <- NULL
-# I <- NULL
+dta <- dgm_sam(num_users, num_dec_points, num_min_prox, c_val = 1)
+M <- NULL
+I <- NULL
 ########################################################
 
 estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 120, num_users, num_dec_points) {
@@ -98,6 +98,10 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
     p_X <- unlist(lapply(Xvec, function(i){p_x[i+1]}))
     init_weight_val <- ((p_X / prob_A)^{Avec}) * (((1 - p_X) / (1 - prob_A))^{1 - Avec}) 
 
+    ##############################################################################
+    # TODO: Below needs to be re-written for when p_{t+m}(H_{t+m}) > 0. 
+    #       Currently we assume all p_{t+m}(H_{t+m}) = 0. 
+    ##############################################################################
     # W <- vector("list", length = num_users)
     # Wvec <- NULL
     # for (i in 1:num_users)
@@ -115,6 +119,7 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
     #     }
     #     Wvec <- c(Wvec, W[[i]])
     # }
+    ##############################################################################
 
     # assume that A_{t} is once every day and the A_{t+m} are all zero for the next 
     # 120 minutes:
@@ -509,7 +514,7 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
             V21 <- V21 + rbind(V21_const * frac_val * g_M_Zdm_id_t, 
                                V21_const * (frac_val * (A_id_t - p_x[X_id[t] + 1]) - 1) * Zdm_id_t) %*% X_id_t_arrow
 
-            V22 <- V22 + rbind(- I_id_t * W_id_t * exp_gMZXi_id_t * g_M_Zdm_id_t * g_M_Zdm_id_t, 
+            V22 <- V22 + 120 * rbind(- I_id_t * W_id_t * exp_gMZXi_id_t * g_M_Zdm_id_t * g_M_Zdm_id_t, 
                                - I_id_t * W_id_t * exp_gMZXi_id_t * (A_id_t - p_x[X_id[t] + 1]) * Zdm_id_t * g_M_Zdm_id_t)
             
             V23 <- V23 + rbind(- I_id_t * W_id_t * exp_AZEta_id_t * sum(M_id_t) * g_M_Zdm_id_t * A_id_t * Zdm_id_t, 
