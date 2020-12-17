@@ -32,7 +32,7 @@ max_cores <- 16
 registerDoMC(min(detectCores() - 1, max_cores))
 
 sample_sizes <- c(25, 50, 75)
-num_dec_points <- 100
+num_dec_points <- 15
 nsim <- 20
 
 # FOR TESTING:

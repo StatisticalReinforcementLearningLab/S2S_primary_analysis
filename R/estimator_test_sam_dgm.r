@@ -10,7 +10,7 @@ library(rootSolve) # for solver function multiroot()
 source("dgm.r")
 
 num_users <- 25
-num_dec_points <- 100
+num_dec_points <- 15
 num_min_prox <- 120 
 
 set.seed(12323)
@@ -201,7 +201,8 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
         Ldm_id <- Ldm[[i]]
         exp_ZXi_AZEta_id <- exp_ZXi_AZEta[[i]]
 
-        eeb_val <- NULL 
+        # eeb_val <- NULL
+        eeb_val <- 0
         for (t in 1:num_dec_points)
         {            
             I_id_t <- I_id[t]
@@ -227,7 +228,8 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
                            sum(I_id_t * W_id_t * exp_ZXi_AZEta_id_t * M_id_t 
                                * Rtm(alpha, beta, 2, A_id_t, X_id_t, Y_id_t, Ldm_id_t) * (A_id_t  - p_x[X_id_t + 1]) * (1 - X_id_t)))
 
-            eeb_val <- cbind(eeb_val, eeb_val_t)
+            # eeb_val <- cbind(eeb_val, eeb_val_t)
+            eeb_val <- eeb_val + eeb_val_t
         }
         return(eeb_val)
     }
@@ -289,7 +291,8 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
         for (id in 1:num_users)
         {   
             eeb_val <- U_func_id(alpha=alpha, beta=beta, i=id) 
-            eeb_val_id <- cbind(eeb_val_id, rowSums(eeb_val))
+            # eeb_val_id <- cbind(eeb_val_id, rowSums(eeb_val))
+            eeb_val_id <- cbind(eeb_val_id, eeb_val)
         }
         eeb_val_final <- apply(eeb_val_id, 1, mean)
 
@@ -354,62 +357,63 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
         return(U_M_id_val)
     }
 
-    U_1_id <- function(alpha, beta, eta, xi, i) 
-    {
-        W_id <- W[[i]]
-        I_id <- I[[i]]
-        M_id <- M[[i]]
-        X_id <- X[[i]]
-        A_id <- A[[i]] 
-        Y_id <- Y[[i]]
+    # U_1_id <- function(alpha, beta, eta, xi, i) 
+    # {
+    #     W_id <- W[[i]]
+    #     I_id <- I[[i]]
+    #     M_id <- M[[i]]
+    #     X_id <- X[[i]]
+    #     A_id <- A[[i]] 
+    #     Y_id <- Y[[i]]
 
-        Zdm_id <- Zdm[[i]]
-        Ldm_id <- Ldm[[i]]
-        g_M_Zdm_id <- g_M_Zdm[[i]]
-        g_Y_Zdm_id <- g_Y_Zdm[[i]]
-        X_id_arrow <- X_arrow[[i]]
+    #     Zdm_id <- Zdm[[i]]
+    #     Ldm_id <- Ldm[[i]]
+    #     g_M_Zdm_id <- g_M_Zdm[[i]]
+    #     g_Y_Zdm_id <- g_Y_Zdm[[i]]
+    #     X_id_arrow <- X_arrow[[i]]
 
-        exp_ZXi_AZEta_id <- exp_ZXi_AZEta[[i]]
+    #     exp_ZXi_AZEta_id <- exp_ZXi_AZEta[[i]]
 
-        U_1_id_val <- 0
-        for (t in 1:num_dec_points)
-        {
-            I_id_t <- I_id[t]
-            M_id_t <- M_id[, t]
-            X_id_t <- X_id[t]
-            W_id_t <- W_id[t]
-            A_id_t <- A_id[t]
-            Y_id_t <- Y_id[, t]
-            exp_ZXi_AZEta_id_t <- exp_ZXi_AZEta_id[t]
+    #     U_1_id_val <- 0
+    #     for (t in 1:num_dec_points)
+    #     {
+    #         I_id_t <- I_id[t]
+    #         M_id_t <- M_id[, t]
+    #         X_id_t <- X_id[t]
+    #         W_id_t <- W_id[t]
+    #         A_id_t <- A_id[t]
+    #         Y_id_t <- Y_id[, t]
+    #         exp_ZXi_AZEta_id_t <- exp_ZXi_AZEta_id[t]
 
-            X_id_t_arrow <- as.vector(X_id_arrow[t,])
+    #         X_id_t_arrow <- as.vector(X_id_arrow[t,])
 
-            Zdm_id_t <- Zdm_id[t]
-            Ldm_id_t <- Ldm_id[t]
-            g_M_Zdm_id_t <- g_M_Zdm_id[t]
-            g_Y_Zdm_id_t <- g_Y_Zdm_id[t]
+    #         Zdm_id_t <- Zdm_id[t]
+    #         Ldm_id_t <- Ldm_id[t]
+    #         g_M_Zdm_id_t <- g_M_Zdm_id[t]
+    #         g_Y_Zdm_id_t <- g_Y_Zdm_id[t]
 
-            exp_gMZxiAZEta_id_t <- as.vector(exp(- g_M_Zdm_id_t * xi - A_id_t * (Zdm_id_t * eta)))
+    #         exp_gMZxiAZEta_id_t <- as.vector(exp(- g_M_Zdm_id_t * xi - A_id_t * (Zdm_id_t * eta)))
 
-            D_t <- rbind(cbind(g_Y_Zdm_id_t, matrix(0,q,1)), 
-                         cbind(matrix(0,q,1), g_Y_Zdm_id_t), 
-                         cbind((A_id_t - p_x[X_id_t + 1]) * X_id_t_arrow, matrix(0,2,1)), 
-                         cbind(matrix(0,2,1), (A_id_t - p_x[X_id_t + 1]) * X_id_t_arrow))
+    #         D_t <- rbind(cbind(g_Y_Zdm_id_t, matrix(0,q,1)), 
+    #                      cbind(matrix(0,q,1), g_Y_Zdm_id_t), 
+    #                      cbind((A_id_t - p_x[X_id_t + 1]) * X_id_t_arrow, matrix(0,2,1)), 
+    #                      cbind(matrix(0,2,1), (A_id_t - p_x[X_id_t + 1]) * X_id_t_arrow))
 
-            U_1_id_t <- D_t %*% rbind(sum(I_id_t * W_id_t * exp_gMZxiAZEta_id_t * M_id_t * Rtm(alpha, beta, 1, A_id_t, X_id_t, Y_id_t, Ldm_id_t)), 
-                                      sum(I_id_t * W_id_t * exp_gMZxiAZEta_id_t * M_id_t * Rtm(alpha, beta, 2, A_id_t, X_id_t, Y_id_t, Ldm_id_t)))
+    #         U_1_id_t <- D_t %*% rbind(sum(I_id_t * W_id_t * exp_gMZxiAZEta_id_t * M_id_t * Rtm(alpha, beta, 1, A_id_t, X_id_t, Y_id_t, Ldm_id_t)), 
+    #                                   sum(I_id_t * W_id_t * exp_gMZxiAZEta_id_t * M_id_t * Rtm(alpha, beta, 2, A_id_t, X_id_t, Y_id_t, Ldm_id_t)))
 
-            U_1_id_val <- U_1_id_val + U_1_id_t
-        }
-        return(U_1_id_val)
-    }
+    #         U_1_id_val <- U_1_id_val + U_1_id_t
+    #     }
+    #     return(U_1_id_val)
+    # }
 
     U_id <- function(alpha, beta, eta, xi, rho, id) 
     {
         rho_0 <- rho[1]  ;  rho_1 <- rho[2]
         U_id_val <- c(U_N_id(rho_0=rho_0, rho_1=rho_1, i=id), 
                       U_M_id(eta=eta, xi=xi, i=id), 
-                      U_1_id(alpha=alpha, beta=beta, eta=eta, xi=xi, i=id)
+                      # U_1_id(alpha=alpha, beta=beta, eta=eta, xi=xi, i=id)
+                      U_func_id(alpha=alpha, beta=beta, i=id)
                      )
         return(U_id_val)
     }
