@@ -1,5 +1,5 @@
 
-# Last changed on: 29th Nov 2020
+# Last changed on: 23rd Dec 2020
 # Last changed by: Marianne
 
 # load required libraries:
@@ -11,7 +11,6 @@ library(data.table)
 
 test_range_y <- FALSE
 analytic_vs_numeric <- FALSE
-test_dgm_sam <- FALSE
 
 # # #################################
 # num_users <- 100
@@ -26,10 +25,10 @@ test_dgm_sam <- FALSE
 
 dgm_sam <- function(num_users, num_dec_points, num_min_prox, c_val) 
 {
-    beta_01 <- -0.5 * c_val 
+    beta_10 <- -0.5 * c_val 
     beta_11 <- 0.5 * c_val 
-    beta_02 <- - c_val
-    beta_12 <- c_val
+    beta_20 <- - c_val
+    beta_21 <- c_val
 
     m_vals <- 1:num_min_prox
 
@@ -52,7 +51,7 @@ dgm_sam <- function(num_users, num_dec_points, num_min_prox, c_val)
 
     for (i in 1:num_users) 
     {
-        print(paste0("i: ", i))
+        # print(paste0("i: ", i))
 
         X[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_X)
         A[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_A) 
@@ -64,8 +63,8 @@ dgm_sam <- function(num_users, num_dec_points, num_min_prox, c_val)
         p_phys_0[[i]] <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_phys_0_fun)
         p_no_stress_0[[i]] <- 1 - (p_stress_0[[i]] + p_phys_0[[i]])
 
-        exp_beta1 <- exp(beta_01 * (1 - X[[i]]) + beta_11 * X[[i]])
-        exp_beta2 <- exp(beta_02 * (1 - X[[i]]) + beta_12 * X[[i]])
+        exp_beta1 <- exp((beta_10 * X[[i]]) + (beta_11 * (1 - X[[i]])))
+        exp_beta2 <- exp((beta_20 * X[[i]]) + (beta_21 * (1 - X[[i]])))
 
         p_stress_1[[i]] <- p_stress_0[[i]] %*% diag(exp_beta1) 
         p_phys_1[[i]] <- p_phys_0[[i]] %*% diag(exp_beta2)
@@ -91,49 +90,13 @@ dgm_sam <- function(num_users, num_dec_points, num_min_prox, c_val)
         A = A, 
         p_A = p_A, 
         p_X = p_X, 
-        p_stress_0 = p_stress_0, 
-        p_phys_0 = p_phys_0, 
-        p_no_stress_0 = p_no_stress_0, 
-        p_stress_1 = p_stress_1, 
-        p_phys_1 = p_phys_1, 
-        p_no_stress_1 = p_no_stress_1, 
-        beta_01_true = beta_01, 
+        beta_10_true = beta_10, 
         beta_11_true = beta_11, 
-        beta_02_true = beta_02, 
-        beta_12_true = beta_12
+        beta_20_true = beta_20, 
+        beta_21_true = beta_21
     )
 
     return(data)
-}
-
-if (test_dgm_sam)
-{
-    num_users <- 10
-    num_dec_points <- 1000
-    num_min_prox <- 120 
-    c_val <- 1
-
-    data <- dgm_sam(num_users, num_dec_points, num_min_prox, c_val) 
-
-    for (i in 1:num_users)
-    {
-        if (i == 1)
-        {
-            print(paste0("i: ", i))
-
-            print(summary(as.vector(data[['p_stress_0']][[i]])))
-            print(summary(as.vector(data[['p_phys_0']][[i]])))
-            print(summary(as.vector(data[['p_no_stress_0']][[i]])))
-            print(summary(as.vector(data[['p_stress_1']][[i]])))
-            print(summary(as.vector(data[['p_phys_1']][[i]])))
-            print(summary(as.vector(data[['p_no_stress_1']][[i]])))  
-        }
-    }
-
-    print(data[['beta_01_true']])
-    print(data[['beta_11_true']])
-    print(data[['beta_02_true']])
-    print(data[['beta_12_true']])
 }
 
 dgm_trivariate_categorical_covariate <- function(sample_size, total_T, time_window_for_Y) {
@@ -142,9 +105,6 @@ dgm_trivariate_categorical_covariate <- function(sample_size, total_T, time_wind
     beta_10_true <- 0.3
     beta_21_true <- 0.2
     beta_20_true <- 0.4
-
-    # xi_true <- -0.5
-    # eta_true <- -0.45
 
     prob_a <- 0.2  # randomization probability 
 
@@ -195,29 +155,6 @@ dgm_trivariate_categorical_covariate <- function(sample_size, total_T, time_wind
         data$Y1[row_index] <- as.numeric(data$Y[row_index] == 1)
         data$Y2[row_index] <- as.numeric(data$Y[row_index] == 2)
         data$Y3[row_index] <- as.numeric(data$Y[row_index] == 3)
-        
-        # missing data indicator: 
-        # following code only works for time_window = 2. 
-        ##############################
-        # TODO: Make for general m eventually. 
-        ##############################
-
-        # data$prob_M[row_index[1]] <- NA
-        # data$prob_M[row_index[2]] <- NA
-        # data$prob_M[row_index[-(1:2)]] <- exp(data$S[t_minus_2] * xi_true + data$A[t_minus_2] * data$S[t_minus_2] * eta_true)
-        # data$M[row_index[-(1:2)]] <- rbinom(total_T - 2, 1, data$prob_M[row_index[-(1:2)]])
-        
-        # # I depends on M_{t-1}: 
-
-        # data$I[row_index[1]] <- 0
-        # data$I[row_index[-1]] <- data$M[row_index[-total_T]]
-
-        # # make Y, Y1, Y2 and Y3 unobserved when M = 0: 
-
-        # data$Y[row_index] <- data$M[row_index] * as.numeric(data$Y[row_index])
-        # data$Y1[row_index] <- data$M[row_index] * Y1
-        # data$Y2[row_index] <- data$M[row_index] * Y2
-        # data$Y3[row_index] <- data$M[row_index] * Y3
     }
 
     return(list(data = data, beta_true = c(beta_11_true, beta_10_true, beta_21_true, beta_20_true)))
@@ -360,28 +297,3 @@ if (analytic_vs_numeric) {
     colnames(compar_mat) <- c("true", "numerically", "ratio")
     print(compar_mat)
 }
-
-
-
-
-
-    # nm <- c('sim_1', 'sim_2', 'sim_3', 'sim_4', 'sim_5', 'sim_6', 'sim_7', 'sim_8', 'sim_9', 'sim_10')
-    # estimates %>% 
-    #   dplyr::mutate(mean_beta_est = rowMeans(select(., sim_1, sim_2, sim_3, sim_4, sim_5, sim_6, sim_7, sim_8, sim_9, sim_10)), 
-    #                 sd_beta_est   = rowSds(as.matrix(.[nm]))) %>% 
-    #   dplyr::select(ss, beta_true, mean_beta_est, sd_beta_est)
-      
-
-#          ss    beta_true  mean_beta_est sd_beta_est
-# beta_10  100       0.3    0.73219574    0.06095904
-# beta_11  100       0.1    0.09799466    0.04211833
-# beta_20  100       0.4    0.94608234    0.08053777
-# beta_21  100       0.2    0.20721341    0.05663128
-# beta_10  200       0.3    0.74613585    0.04551376
-# beta_11  200       0.1    0.10560195    0.03663264
-# beta_20  200       0.4    0.93510711    0.04058724
-# beta_21  200       0.2    0.15905888    0.03080495
-# beta_10  300       0.3    0.75336714    0.04295278
-# beta_11  300       0.1    0.08078576    0.03384844
-# beta_20  300       0.4    0.94704583    0.05041064
-# beta_21  300       0.2    0.18009016    0.05773039

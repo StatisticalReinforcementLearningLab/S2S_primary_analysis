@@ -1,10 +1,11 @@
 
-# Last changed on: 29th Nov 2020
+# Last changed on: 17th Dec 2020
 # Last changed by: Marianne 
 
 # load required libraries:
 
 library(rootSolve) # for solver function multiroot()
+source("functions.r")
 
 ########################################################
 source("dgm.r")
@@ -131,38 +132,13 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
 
     # 2.2 Step 2: Estimating the Missingness Mechanism:
 
-    estimating_equation_missingness <- function(theta) 
-    {
-        eta <- theta[1:ncol_Z]
-        xi <- theta[(ncol_Z+1):(2 * ncol_Z)]
-
-        eem_val_id <- NULL
-        for (i in 1:num_users)
-        {
-            eem_val <- NULL 
-            exp_AZEta_i <- exp(-A[[i]] * (Zdm[[i]] * eta))
-            exp_ZXi_i <- exp(Zdm[[i]] * xi)
-            
-            for (t in 1:num_dec_points)
-            {
-                Zdm_id_t <- Zdm[[i]][t]
-                eem_val_t <- (sum(I[[i]][t] * W[[i]][t]
-                              * (exp_AZEta_i[t] * M[[i]][,t] - exp_ZXi_i[t]))
-                              * c(Zdm_id_t, (A[[i]][t] - p_x[X[[i]][t] + 1]) * Zdm_id_t))
-                eem_val <- cbind(eem_val, eem_val_t)
-            }
-            eem_val_id <- cbind(eem_val_id, rowSums(eem_val))
-        }
-        eem_val_final <- apply(eem_val_id, 1, mean)
-        return(eem_val_final)
-    }
-
     estimator_initial_value <- rep(0, length = 2 * ncol_Z)
     solution_missingness <- tryCatch(
         {
-            multiroot(estimating_equation_missingness, estimator_initial_value)
+            multiroot(estimating_equation_missingness, estimator_initial_value, 
+                      parms = list(num_users, num_dec_points, ncol_Z, A, M, I, W, X, p_x, Zdm))
         },
-        error = function(cond) 
+        error = function(cond)
         {
             message("\nCaught error in multiroot inside estimating_equation_missingness():")
             message(cond)
@@ -190,6 +166,56 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
         return(ans)
     }
 
+    U_1_id <- function(alpha, beta, eta, xi, i) 
+    {
+        W_id <- W[[i]]
+        I_id <- I[[i]]
+        M_id <- M[[i]]
+        X_id <- X[[i]]
+        A_id <- A[[i]] 
+        Y_id <- Y[[i]]
+
+        Zdm_id <- Zdm[[i]]
+        Ldm_id <- Ldm[[i]]
+        g_M_Zdm_id <- g_M_Zdm[[i]]
+        g_Y_Zdm_id <- g_Y_Zdm[[i]]
+        X_id_arrow <- X_arrow[[i]]
+
+        exp_ZXi_AZEta_id <- exp_ZXi_AZEta[[i]]
+
+        U_1_id_val <- 0
+        for (t in 1:num_dec_points)
+        {
+            I_id_t <- I_id[t]
+            M_id_t <- M_id[, t]
+            X_id_t <- X_id[t]
+            W_id_t <- W_id[t]
+            A_id_t <- A_id[t]
+            Y_id_t <- Y_id[, t]
+            exp_ZXi_AZEta_id_t <- exp_ZXi_AZEta_id[t]
+
+            X_id_t_arrow <- as.vector(X_id_arrow[t,])
+
+            Zdm_id_t <- Zdm_id[t]
+            Ldm_id_t <- Ldm_id[t]
+            g_M_Zdm_id_t <- g_M_Zdm_id[t]
+            g_Y_Zdm_id_t <- g_Y_Zdm_id[t]
+
+            exp_gMZxiAZEta_id_t <- as.vector(exp(- g_M_Zdm_id_t * xi - A_id_t * (Zdm_id_t * eta)))
+
+            D_t <- rbind(cbind(g_Y_Zdm_id_t, matrix(0,q,1)), 
+                         cbind(matrix(0,q,1), g_Y_Zdm_id_t), 
+                         cbind((A_id_t - p_x[X_id_t + 1]) * X_id_t_arrow, matrix(0,2,1)), 
+                         cbind(matrix(0,2,1), (A_id_t - p_x[X_id_t + 1]) * X_id_t_arrow))
+
+            U_1_id_t <- D_t %*% rbind(sum(I_id_t * W_id_t * exp_gMZxiAZEta_id_t * M_id_t * Rtm(alpha, beta, 1, A_id_t, X_id_t, Y_id_t, Ldm_id_t)), 
+                                      sum(I_id_t * W_id_t * exp_gMZxiAZEta_id_t * M_id_t * Rtm(alpha, beta, 2, A_id_t, X_id_t, Y_id_t, Ldm_id_t)))
+
+            U_1_id_val <- U_1_id_val + U_1_id_t
+        }
+        return(U_1_id_val)
+    }
+
     U_func_id <- function(alpha, beta, i) 
     { 
         I_id <- I[[i]]
@@ -201,7 +227,6 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
         Ldm_id <- Ldm[[i]]
         exp_ZXi_AZEta_id <- exp_ZXi_AZEta[[i]]
 
-        # eeb_val <- NULL
         eeb_val <- 0
         for (t in 1:num_dec_points)
         {            
@@ -228,7 +253,6 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
                            sum(I_id_t * W_id_t * exp_ZXi_AZEta_id_t * M_id_t 
                                * Rtm(alpha, beta, 2, A_id_t, X_id_t, Y_id_t, Ldm_id_t) * (A_id_t  - p_x[X_id_t + 1]) * (1 - X_id_t)))
 
-            # eeb_val <- cbind(eeb_val, eeb_val_t)
             eeb_val <- eeb_val + eeb_val_t
         }
         return(eeb_val)
@@ -290,9 +314,9 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
         eeb_val_id <- NULL
         for (id in 1:num_users)
         {   
-            eeb_val <- U_func_id(alpha=alpha, beta=beta, i=id) 
             # eeb_val_id <- cbind(eeb_val_id, rowSums(eeb_val))
-            eeb_val_id <- cbind(eeb_val_id, eeb_val)
+            # eeb_val_id <- cbind(eeb_val_id, U_func_id(alpha=alpha, beta=beta, i=id))
+            eeb_val_id <- cbind(eeb_val_id, U_1_id(alpha=alpha, beta=beta, eta=eta_hat, xi=xi_hat, i=id))
         }
         eeb_val_final <- apply(eeb_val_id, 1, mean)
 
@@ -357,63 +381,14 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
         return(U_M_id_val)
     }
 
-    # U_1_id <- function(alpha, beta, eta, xi, i) 
-    # {
-    #     W_id <- W[[i]]
-    #     I_id <- I[[i]]
-    #     M_id <- M[[i]]
-    #     X_id <- X[[i]]
-    #     A_id <- A[[i]] 
-    #     Y_id <- Y[[i]]
-
-    #     Zdm_id <- Zdm[[i]]
-    #     Ldm_id <- Ldm[[i]]
-    #     g_M_Zdm_id <- g_M_Zdm[[i]]
-    #     g_Y_Zdm_id <- g_Y_Zdm[[i]]
-    #     X_id_arrow <- X_arrow[[i]]
-
-    #     exp_ZXi_AZEta_id <- exp_ZXi_AZEta[[i]]
-
-    #     U_1_id_val <- 0
-    #     for (t in 1:num_dec_points)
-    #     {
-    #         I_id_t <- I_id[t]
-    #         M_id_t <- M_id[, t]
-    #         X_id_t <- X_id[t]
-    #         W_id_t <- W_id[t]
-    #         A_id_t <- A_id[t]
-    #         Y_id_t <- Y_id[, t]
-    #         exp_ZXi_AZEta_id_t <- exp_ZXi_AZEta_id[t]
-
-    #         X_id_t_arrow <- as.vector(X_id_arrow[t,])
-
-    #         Zdm_id_t <- Zdm_id[t]
-    #         Ldm_id_t <- Ldm_id[t]
-    #         g_M_Zdm_id_t <- g_M_Zdm_id[t]
-    #         g_Y_Zdm_id_t <- g_Y_Zdm_id[t]
-
-    #         exp_gMZxiAZEta_id_t <- as.vector(exp(- g_M_Zdm_id_t * xi - A_id_t * (Zdm_id_t * eta)))
-
-    #         D_t <- rbind(cbind(g_Y_Zdm_id_t, matrix(0,q,1)), 
-    #                      cbind(matrix(0,q,1), g_Y_Zdm_id_t), 
-    #                      cbind((A_id_t - p_x[X_id_t + 1]) * X_id_t_arrow, matrix(0,2,1)), 
-    #                      cbind(matrix(0,2,1), (A_id_t - p_x[X_id_t + 1]) * X_id_t_arrow))
-
-    #         U_1_id_t <- D_t %*% rbind(sum(I_id_t * W_id_t * exp_gMZxiAZEta_id_t * M_id_t * Rtm(alpha, beta, 1, A_id_t, X_id_t, Y_id_t, Ldm_id_t)), 
-    #                                   sum(I_id_t * W_id_t * exp_gMZxiAZEta_id_t * M_id_t * Rtm(alpha, beta, 2, A_id_t, X_id_t, Y_id_t, Ldm_id_t)))
-
-    #         U_1_id_val <- U_1_id_val + U_1_id_t
-    #     }
-    #     return(U_1_id_val)
-    # }
-
     U_id <- function(alpha, beta, eta, xi, rho, id) 
     {
+        print(all.equal(as.numeric(U_1_id(alpha=alpha, beta=beta, eta=eta, xi=xi, i=id)), as.numeric(U_func_id(alpha=alpha, beta=beta, i=id))))
         rho_0 <- rho[1]  ;  rho_1 <- rho[2]
         U_id_val <- c(U_N_id(rho_0=rho_0, rho_1=rho_1, i=id), 
                       U_M_id(eta=eta, xi=xi, i=id), 
-                      # U_1_id(alpha=alpha, beta=beta, eta=eta, xi=xi, i=id)
-                      U_func_id(alpha=alpha, beta=beta, i=id)
+                      U_1_id(alpha=alpha, beta=beta, eta=eta, xi=xi, i=id)
+                    #   U_func_id(alpha=alpha, beta=beta, i=id)
                      )
         return(U_id_val)
     }
@@ -423,8 +398,7 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
     Sigman_id_list <- list()
     for (id in 1:num_users)
     {
-        U_func_id_val <- U_id(alpha_hat, beta_hat, eta_hat, xi_hat, rho_hat, id) 
-        Sigman_id_list[[id]] <- tcrossprod(U_func_id_val)
+        Sigman_id_list[[id]] <- tcrossprod(U_id(alpha_hat, beta_hat, eta_hat, xi_hat, rho_hat, id))
     }
     Sigman <- apply(simplify2array(Sigman_id_list), 1:2, mean)
 
@@ -578,7 +552,7 @@ estimating_equation_dgm_sam <- function(dta, M = NULL, I = NULL, num_min_prox = 
     
     ### 6. return the result with variable names ###
     
-    names(beta_hat) <- names(beta_se) <- c("beta_01", "beta_11", "beta_02", "beta_12")
+    names(beta_hat) <- names(beta_se) <- c("beta_10", "beta_11", "beta_20", "beta_21")
 
     return(list(beta_hat = beta_hat,
                 beta_se = beta_se,
