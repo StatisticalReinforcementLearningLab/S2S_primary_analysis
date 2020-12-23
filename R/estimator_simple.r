@@ -16,11 +16,21 @@ source("functions.r")
 
 # set.seed(12323)
 
-# dta <- dgm_sam(num_users, num_dec_points, num_min_prox, c_val = 1)
+# dta <- dgm_sam(
+#     num_users, 
+#     num_dec_points, 
+#     num_min_prox, 
+#     c_val = 1
+# )
 # I <- NULL
 ########################################################
 
-estimating_equation_simple <- function(dta, I = NULL, num_min_prox = 120, num_users, num_dec_points) {
+estimating_equation_simple <- function(
+    dta, 
+    I = NULL, 
+    num_min_prox = 120, 
+    num_users, 
+    num_dec_points) {
     
     ### 1. preparation ###
 

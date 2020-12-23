@@ -75,7 +75,10 @@ for (i_ss in 1:length(sample_sizes))
                     c_val = c_val
                 )
         
-                beta_true <- c(dgm[['beta_10_true']], dgm[['beta_11_true']], dgm[['beta_20_true']], dgm[['beta_21_true']])
+                beta_true <- c(dgm[['beta_10_true']], 
+                               dgm[['beta_11_true']], 
+                               dgm[['beta_20_true']], 
+                               dgm[['beta_21_true']])
 
                 fit_e <- estimating_equation_dgm_sam(
                     dta = dgm, 
@@ -120,7 +123,10 @@ for (i_ss in 1:length(sample_sizes))
                     c_val = c_val
                 )
         
-            beta_true <- c(dgm[['beta_10_true']], dgm[['beta_11_true']], dgm[['beta_20_true']], dgm[['beta_21_true']])
+            beta_true <- c(dgm[['beta_10_true']], 
+                           dgm[['beta_11_true']], 
+                           dgm[['beta_20_true']], 
+                           dgm[['beta_21_true']])
 
             fit_e <- estimating_equation_simple(
                 dta = dgm, 
@@ -154,7 +160,13 @@ for (i_ss in 1:length(sample_sizes))
     beta_hat <- beta_hat_mat
     beta_hat_se <- beta_hat_se_mat
 
-    result <- compute_result_beta(beta_true, beta_hat, beta_hat_se, moderator_vars = "X", control_vars = "S", significance_level = 0.05)
+    result <- compute_result_beta(
+        beta_true, beta_hat, 
+        beta_hat_se, 
+        moderator_vars = "X", 
+        control_vars = "S", 
+        significance_level = 0.05
+    )
 
     result_df <- data.frame(ss = rep(sample_size, 1),
                             bias = result$bias,
@@ -169,7 +181,7 @@ for (i_ss in 1:length(sample_sizes))
     result_df_collected <- rbind(result_df_collected, result_df)
     compar_mat <- rbind(compar_mat, as.data.frame(result$compar_mat))
 
-    if (i_ss == sample_sizes[length(sample_sizes)])
+    if (sample_size == sample_sizes[length(sample_sizes)])
     {
         print(result_df_collected)
         print(compar_mat)
