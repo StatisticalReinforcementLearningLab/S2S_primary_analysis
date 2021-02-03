@@ -67,6 +67,8 @@ Detailed documentation for these analyses is provided in [Covariate_Analyses.pdf
 
 - [simple_estimating_equation_and_symptotics.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/simple_estimating_equation_and_asymptotics.pdf)
 
+- [complex_estimating_equation_and_symptotics.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/complex_estimating_equation_and_asymptotics.pdf)
+
 ### 3.4 Consistency Simulation Code
 - Data generating model: [R/dgm.r](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/R/dgm.r)
 - Estimator: [R/estimator.r](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/R/estimator.r)
