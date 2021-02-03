@@ -1,8 +1,6 @@
 
-# Last changed on: 23rd Dec 2020
+# Last changed on: 2nd Feb 2021
 # Last changed by: Marianne 
-
-# load required libraries:
 
 library(rootSolve) # for solver function multiroot()
 source("functions.r")
@@ -37,14 +35,14 @@ estimating_equation_simple <- function(
     Y <- dta$Y
     X <- dta$X
     A <- dta$A
-    p_X <- dta$p_X
+    p_A <- dta$p_A
 
     X_arrow <- vector("list", length = num_users)
     Ldm <- vector("list", length = num_users) 
     for (i in 1:num_users)
     {
         X_arrow[[i]] <- cbind(X[[i]], 1 - X[[i]]) 
-        Ldm[[i]] <- rep(1, num_dec_points)
+        Ldm[[i]] <- cbind(rep(1, num_dec_points), X[[i]])
     }
     
     if (is.null(I)) { 
@@ -55,7 +53,7 @@ estimating_equation_simple <- function(
     }
 
     # Set dimensions 
-    q <- 1
+    q <- ncol(Ldm[[1]])
     dim_alpha <- 2 * q
     dim_beta <- 4
     
@@ -70,11 +68,11 @@ estimating_equation_simple <- function(
 
     Rtm <- function(alpha, beta, k, A, X, Y, L) 
     { 
-        alpha_k <- alpha[k]
+        alpha_k <- alpha[(k * 2 - 1) : (k * 2)]
         beta_k <- beta[(k * 2 - 1) : (k * 2)]
 
         ans <- (exp(- A * ((X * beta_k[1]) + ((1 - X) * beta_k[2]))) * as.numeric(Y == k) 
-                - as.numeric(exp(L * alpha_k)))
+                - as.numeric(exp(L %*% alpha_k)))
 
         return(ans)
     }
@@ -97,12 +95,12 @@ estimating_equation_simple <- function(
             I_id_t <- I_id[t]
 
             X_id_t_arrow <- as.vector(X_id_arrow[t,])
-            Ldm_id_t <- Ldm_id[t]
+            Ldm_id_t <- Ldm_id[t,]
 
             D_t <- rbind(cbind(Ldm_id_t, matrix(0,q,1)), 
                          cbind(matrix(0,q,1), Ldm_id_t), 
-                         cbind((A_id_t - p_X) * X_id_t_arrow, matrix(0,2,1)), 
-                         cbind(matrix(0,2,1), (A_id_t - p_X) * X_id_t_arrow))
+                         cbind((A_id_t - p_A) * X_id_t_arrow, matrix(0,2,1)), 
+                         cbind(matrix(0,2,1), (A_id_t - p_A) * X_id_t_arrow))
 
             U_1_id_t <- D_t %*% rbind(sum(I_id_t * Rtm(alpha, beta, 1, A_id_t, X_id_t, Y_id_t, Ldm_id_t)), 
                                       sum(I_id_t * Rtm(alpha, beta, 2, A_id_t, X_id_t, Y_id_t, Ldm_id_t)))
@@ -164,8 +162,8 @@ estimating_equation_simple <- function(
     beta_hat_1 <- beta_hat[1:2]
     beta_hat_2 <- beta_hat[3:4]
     
-    alpha_hat_1 <- alpha_hat[1]
-    alpha_hat_2 <- alpha_hat[2]
+    alpha_hat_1 <- alpha_hat[1:2]
+    alpha_hat_2 <- alpha_hat[3:4]
 
     Vn_list <- list()
     for (i in 1:num_users)
@@ -187,17 +185,17 @@ estimating_equation_simple <- function(
             Y_id_t <- Y_id[,t]
 
             X_id_t_arrow <- as.vector(X_id_arrow[t,])
-            Ldm_id_t <- Ldm_id[t]
+            Ldm_id_t <- Ldm_id[t,]
 
             D_t <- rbind(cbind(Ldm_id_t, matrix(0,q,1)), 
                          cbind(matrix(0,q,1), Ldm_id_t), 
-                         cbind((A_id_t - p_X) * X_id_t_arrow, matrix(0,2,1)), 
-                         cbind(matrix(0,2,1), (A_id_t - p_X) * X_id_t_arrow))
+                         cbind((A_id_t - p_A) * X_id_t_arrow, matrix(0,2,1)), 
+                         cbind(matrix(0,2,1), (A_id_t - p_A) * X_id_t_arrow))
 
-            V11 <- - 120 * exp(Ldm_id_t * alpha_hat_1) * Ldm_id_t 
-            V13 <- - exp(- A_id_t * as.numeric(sum(X_id_t_arrow * beta_hat_1))) * sum(as.numeric(Y_id_t == 1)) * A_id_t * X_id_t_arrow
-            V22 <- - 120 * exp(Ldm_id_t * alpha_hat_2) * Ldm_id_t 
-            V24 <- - exp(- A_id_t * as.numeric(sum(X_id_t_arrow * beta_hat_2))) * sum(as.numeric(Y_id_t == 2)) * A_id_t * X_id_t_arrow
+            V11 <- as.vector(- 120 * exp(Ldm_id_t %*% alpha_hat_1) %*% Ldm_id_t)
+            V13 <- - as.numeric(exp(- A_id_t * (X_id_t_arrow %*% beta_hat_1))) * sum(as.numeric(Y_id_t == 1)) * A_id_t * X_id_t_arrow
+            V22 <- as.vector(- 120 * exp(Ldm_id_t %*% alpha_hat_2) %*% Ldm_id_t)
+            V24 <- - as.numeric(exp(- A_id_t * (X_id_t_arrow %*% beta_hat_2))) * sum(as.numeric(Y_id_t == 2)) * A_id_t * X_id_t_arrow
 
             Vn_list[[i]] <- Vn_list[[i]] + I_id_t * D_t %*% rbind(c(V11, matrix(0, 1, q), V13, matrix(0, 1, 2)), 
                                                                   c(matrix(0, 1, q), V22, matrix(0, 1, 2), V24))
@@ -207,7 +205,7 @@ estimating_equation_simple <- function(
 
     Vn_inv <- solve(Vn)
     varcov <- Vn_inv %*% Sigman %*% t(Vn_inv) / num_users
-    beta_se <- sqrt(diag(varcov)[3:6])
+    beta_se <- sqrt(diag(varcov)[5:8])
     
     ### 6. return the result with variable names ###
     

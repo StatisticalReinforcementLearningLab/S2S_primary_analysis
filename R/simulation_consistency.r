@@ -1,10 +1,10 @@
 
-# Last changed on: 23rd Dec 2020
+# Last changed on: 2nd Feb 2021
 # Last changed by: Marianne 
 
 # set flags: 
 
-useSimpleModel <- TRUE
+useSimpleModel <- FALSE
 useSAMdgm <- TRUE 
 
 # load required libraries and files:
@@ -12,6 +12,8 @@ useSAMdgm <- TRUE
 library(foreach)
 library(doMC)
 library(doRNG)
+library(data.table)
+library(rootSolve) 
 
 source("dgm.r")
 source("functions.r")
@@ -27,7 +29,7 @@ if (!useSimpleModel)
 {
     if (useSAMdgm)
     {
-        source("estimator_test_sam_dgm.r")
+        source("estimator_complex.r")
         num_min_prox_val <- 120
         c_val <- 1
     }
@@ -44,7 +46,7 @@ registerDoMC(min(detectCores() - 1, max_cores))
 
 sample_sizes <- c(25, 50, 75)
 num_dec_points <- 50
-nsim <- 20
+nsim <- 100
 
 result_df_collected <- data.frame()
 compar_mat <- data.frame()

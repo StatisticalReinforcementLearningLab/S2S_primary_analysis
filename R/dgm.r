@@ -1,11 +1,6 @@
 
-# Last changed on: 23rd Dec 2020
+# Last changed on: 20th Jan 2021
 # Last changed by: Marianne
-
-# load required libraries:
-
-library(dplyr)
-library(data.table)
 
 # set flags: 
 
@@ -15,7 +10,7 @@ analytic_vs_numeric <- FALSE
 # # #################################
 # num_users <- 100
 # num_dec_points <- 100
-# num_min_prox <- 120 
+# num_min_prox <- 120
 # c_val <- 1
 
 # pretend that every day is a decision point 
@@ -56,8 +51,11 @@ dgm_sam <- function(num_users, num_dec_points, num_min_prox, c_val)
         X[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_X)
         A[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_A) 
 
-        p_stress_0_fun <- function(X) { 0.5 * exp(-(m_vals - 1)) * (0.5 * X + 0.25 * (1 - X)) }
-        p_phys_0_fun <- function(X) { 0.5 * exp(-(num_min_prox - m_vals)) * (0.25 * X + 0.5 * (1 - X)) }
+        # p_stress_0_fun <- function(X) { 0.5 * exp(-(m_vals - 1)) * (0.5 * X + 0.25 * (1 - X)) }
+        # p_phys_0_fun <- function(X) { 0.5 * exp(-(num_min_prox - m_vals)) * (0.25 * X + 0.5 * (1 - X)) }
+
+        p_stress_0_fun <- function(X) { 0.5 * exp(-(m_vals - 1) / num_min_prox) * (0.5 * X + 0.25 * (1 - X)) }
+        p_phys_0_fun <- function(X) { 0.5 * exp(-(num_min_prox - m_vals) / num_min_prox) * (0.25 * X + 0.5 * (1 - X)) }
 
         p_stress_0[[i]] <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_stress_0_fun)
         p_phys_0[[i]] <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_phys_0_fun)

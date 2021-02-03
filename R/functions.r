@@ -39,28 +39,4 @@ compute_result_beta <- function(beta_true, beta, beta_se, moderator_vars, contro
     return(list(bias = bias, sd=sd, ave_beta_se=ave_beta_se, rmse = rmse, coverage_prob = coverage_prob, compar_mat = compar_mat))
 }
 
-estimating_equation_missingness <- function(theta, num_users, num_dec_points, ncol_Z, A, M, I, W, X, p_x, Zdm) 
-{
-    eta <- theta[1:ncol_Z]
-    xi <- theta[(ncol_Z+1):(2 * ncol_Z)]
-
-    eem_val_id <- NULL
-    for (i in 1:num_users)
-    {
-        eem_val <- NULL 
-        exp_AZEta_i <- exp(-A[[i]] * (Zdm[[i]] * eta))
-        exp_ZXi_i <- exp(Zdm[[i]] * xi)
-        
-        for (t in 1:num_dec_points)
-        {
-            Zdm_id_t <- Zdm[[i]][t]
-            eem_val_t <- (sum(I[[i]][t] * W[[i]][t]
-                            * (exp_AZEta_i[t] * M[[i]][,t] - exp_ZXi_i[t]))
-                            * c(Zdm_id_t, (A[[i]][t] - p_x[X[[i]][t] + 1]) * Zdm_id_t))
-            eem_val <- cbind(eem_val, eem_val_t)
-        }
-        eem_val_id <- cbind(eem_val_id, rowSums(eem_val))
-    }
-    eem_val_final <- apply(eem_val_id, 1, mean)
-    return(eem_val_final)
-}
+ 
