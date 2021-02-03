@@ -65,6 +65,8 @@ Detailed documentation for these analyses is provided in [Covariate_Analyses.pdf
 ### 3.3 Primary Analysis Method
 - The file [Appendix_Primary_Analysis_Methodology.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Appendix_Primary_Analysis_Methodology.pdf) provides the appendix for the design paper with detail on the primary analysis methodology. 
 
+- [simple_estimating_equation_and_symptotics.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/simple_estimating_equation_and_asymptotics.pdf)
+
 ### 3.4 Consistency Simulation Code
 - Data generating model: [R/dgm.r](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/R/dgm.r)
 - Estimator: [R/estimator.r](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/R/estimator.r)
