@@ -1,5 +1,5 @@
 
-# Last changed on: 2nd Feb 2021
+# Last changed on: 2nd Mar 2021
 # Last changed by: Marianne 
 
 # load required libraries:
@@ -7,23 +7,23 @@
 library(rootSolve) # for solver function multiroot()
 source("functions.r")
 
-########################################################
-source("dgm.r")
+# ########################################################
+# source("dgm.r")
 
-num_users <- 25
-num_dec_points <- 15
-num_min_prox <- 120 
+# num_users <- 25
+# num_dec_points <- 15
+# num_min_prox <- 120 
 
-set.seed(12323)
+# set.seed(12323)
 
-dta <- dgm_sam(
-    num_users, 
-    num_dec_points, 
-    num_min_prox, 
-    c_val = 1
-)
-M <- NULL
-I <- NULL
+# dta <- dgm_sam(
+#     num_users, 
+#     num_dec_points, 
+#     num_min_prox, 
+#     c_val = 1
+# )
+# M <- NULL
+# I <- NULL
 ########################################################
 
 estimating_equation_dgm_sam <- function(
@@ -97,7 +97,8 @@ estimating_equation_dgm_sam <- function(
     g_M_Zdm_vec <- unlist(g_M_Zdm)
     g_Y_Zdm_vec <- unlist(g_Y_Zdm)
 
-    prob_A <- rep(p_A, length(Avec))
+    # prob_A <- rep(p_A, length(Avec))
+    prob_A <- unlist(p_A)
 
     p_x0 <- mean(sum(Ivec * as.numeric(Xvec == 0) * prob_A)) / mean(sum(Ivec * as.numeric(Xvec == 0)))
     p_x1 <- mean(sum(Ivec * as.numeric(Xvec == 1) * prob_A)) / mean(sum(Ivec * as.numeric(Xvec == 1)))
@@ -259,8 +260,11 @@ estimating_equation_dgm_sam <- function(
         # val1 <- sum(I[[i]] * as.numeric(X[[i]] == 0) * (p_A - rho_0))
         # val2 <- sum(I[[i]] * as.numeric(X[[i]] == 1) * (p_A - rho_1))
 
-        val1 <- sum(I[[i]] * as.numeric(X[[i]] == 0) * (p_A - p_A))
-        val2 <- sum(I[[i]] * as.numeric(X[[i]] == 1) * (p_A - p_A))
+        # val1 <- sum(I[[i]] * as.numeric(X[[i]] == 0) * (p_A - p_A))
+        # val2 <- sum(I[[i]] * as.numeric(X[[i]] == 1) * (p_A - p_A))
+
+        val1 <- sum(I[[i]] * as.numeric(X[[i]] == 0) * (prob_A[[i]] - rho_0))
+        val2 <- sum(I[[i]] * as.numeric(X[[i]] == 1) * (prob_A[[i]] - rho_1))
 
         return(c(val1, val2))
     }

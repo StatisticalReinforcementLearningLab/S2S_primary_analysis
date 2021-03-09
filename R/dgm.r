@@ -1,5 +1,5 @@
 
-# Last changed on: 20th Jan 2021
+# Last changed on: 2nd M 2021
 # Last changed by: Marianne
 
 # set flags: 
@@ -8,10 +8,10 @@ test_range_y <- FALSE
 analytic_vs_numeric <- FALSE
 
 # # #################################
-# num_users <- 100
-# num_dec_points <- 100
-# num_min_prox <- 120
-# c_val <- 1
+num_users <- 100
+num_dec_points <- 100
+num_min_prox <- 120
+c_val <- 1
 
 # pretend that every day is a decision point 
 # 100 days 
@@ -32,7 +32,8 @@ dgm_sam <- function(num_users, num_dec_points, num_min_prox, c_val)
     A <- vector("list", length = num_users)
 
     p_X <- 0.2 
-    p_A <- 0.5
+    # p_A <- 0.5
+    p_A <- vector("list", length = num_users)
 
     id <- NULL
 
@@ -49,7 +50,92 @@ dgm_sam <- function(num_users, num_dec_points, num_min_prox, c_val)
         # print(paste0("i: ", i))
 
         X[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_X)
-        A[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_A) 
+        p_A[[i]] <- rep(0.5, num_dec_points)
+        A[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_A[[i]]) 
+
+        # p_stress_0_fun <- function(X) { 0.5 * exp(-(m_vals - 1)) * (0.5 * X + 0.25 * (1 - X)) }
+        # p_phys_0_fun <- function(X) { 0.5 * exp(-(num_min_prox - m_vals)) * (0.25 * X + 0.5 * (1 - X)) }
+
+        p_stress_0_fun <- function(X) { 0.5 * exp(-(m_vals - 1) / num_min_prox) * (0.5 * X + 0.25 * (1 - X)) }
+        p_phys_0_fun <- function(X) { 0.5 * exp(-(num_min_prox - m_vals) / num_min_prox) * (0.25 * X + 0.5 * (1 - X)) }
+
+        p_stress_0[[i]] <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_stress_0_fun)
+        p_phys_0[[i]] <- apply(X = as.array(X[[i]]), MARGIN = 1, FUN = p_phys_0_fun)
+        p_no_stress_0[[i]] <- 1 - (p_stress_0[[i]] + p_phys_0[[i]])
+
+        exp_beta1 <- exp((beta_10 * X[[i]]) + (beta_11 * (1 - X[[i]])))
+        exp_beta2 <- exp((beta_20 * X[[i]]) + (beta_21 * (1 - X[[i]])))
+
+        p_stress_1[[i]] <- p_stress_0[[i]] %*% diag(exp_beta1) 
+        p_phys_1[[i]] <- p_phys_0[[i]] %*% diag(exp_beta2)
+        p_no_stress_1[[i]] <- 1 - (p_stress_1[[i]] + p_phys_1[[i]])
+
+        cat_fun <- function(A, B, C)
+            extraDistr::rcat(n = num_min_prox, p = cbind(A, B, C), labels = c(1,2,3))
+    
+        Y[[i]] <- sapply(1:num_dec_points, 
+            function(t) {
+                val_A0 <- as.numeric(cat_fun(p_stress_0[[i]][,t], p_phys_0[[i]][,t], p_no_stress_0[[i]][,t]))
+                val_A1 <- as.numeric(cat_fun(p_stress_1[[i]][,t], p_phys_1[[i]][,t], p_no_stress_1[[i]][,t]))
+                res <- ((1 - A[[i]][t]) * val_A0) + (A[[i]][t] * val_A1)
+            })
+
+        id <- c(id, rep(i, num_dec_points))
+    }
+
+    data <- list(
+        id = id, 
+        Y = Y, 
+        X = X, 
+        A = A, 
+        p_A = p_A, 
+        p_X = p_X, 
+        beta_10_true = beta_10, 
+        beta_11_true = beta_11, 
+        beta_20_true = beta_20, 
+        beta_21_true = beta_21
+    )
+
+    return(data)
+}
+
+dgm_sam_non_const_rand <- function(num_users, num_dec_points, num_min_prox, c_val) 
+{
+    beta_10 <- -0.5 * c_val 
+    beta_11 <- 0.5 * c_val 
+    beta_20 <- - c_val
+    beta_21 <- c_val
+
+    m_vals <- 1:num_min_prox
+
+    Y <- vector("list", length = num_users)
+    X <- vector("list", length = num_users)
+    A <- vector("list", length = num_users)
+
+    p_X <- 0.2 
+    # p_A <- 0.5
+    p_A <- vector("list", length = num_users)
+
+    id <- NULL
+
+    p_stress_1 <- vector("list", length = num_users)
+    p_phys_1 <- vector("list", length = num_users)
+    p_no_stress_1 <- vector("list", length = num_users)
+
+    p_stress_0 <- vector("list", length = num_users)
+    p_phys_0 <- vector("list", length = num_users)
+    p_no_stress_0 <- vector("list", length = num_users)
+
+    for (i in 1:num_users) 
+    {
+        # print(paste0("i: ", i))
+
+        X[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_X)
+
+        # A[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_A) 
+        non_const_rands <- c(0.3, 0.7)
+        p_A[[i]] <- non_const_rands[X[[i]]+1]
+        A[[i]] <- extraDistr::rbern(n = num_dec_points, prob = p_A[[i]]) 
 
         # p_stress_0_fun <- function(X) { 0.5 * exp(-(m_vals - 1)) * (0.5 * X + 0.25 * (1 - X)) }
         # p_phys_0_fun <- function(X) { 0.5 * exp(-(num_min_prox - m_vals)) * (0.25 * X + 0.5 * (1 - X)) }

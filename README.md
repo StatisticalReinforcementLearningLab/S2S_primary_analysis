@@ -63,7 +63,7 @@ the missing data within the Sense2Stop MRT.
 Detailed documentation for these analyses is provided in [Covariate_Analyses.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Covariate_Analyses.pdf).
 
 ### 3.3 Primary Analysis Method
-- The file [Appendix_Primary_Analysis_Methodology.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Appendix_Primary_Analysis_Methodology.pdf) provides the appendix for the design paper with detail on the primary analysis methodology. 
+- The file [Sense2Stop_Supplement.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/Sense2Stop_Supplement.pdf) provides the appendix for the design paper with detail on the primary analysis methodology. 
 
 - [simple_estimating_equation_and_symptotics.pdf](https://github.com/StatisticalReinforcementLearningLab/S2S_primary_analysis/blob/master/pdf_files/simple_estimating_equation_and_asymptotics.pdf)
 

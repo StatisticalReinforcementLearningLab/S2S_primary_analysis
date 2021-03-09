@@ -1,11 +1,12 @@
 
-# Last changed on: 2nd Feb 2021
+# Last changed on: 2nd Mar 2021
 # Last changed by: Marianne 
 
 # set flags: 
 
 useSimpleModel <- FALSE
-useSAMdgm <- TRUE 
+useSAMdgm <- FALSE 
+useNonConstDgm <- !useSAMdgm
 
 # load required libraries and files:
 
@@ -27,18 +28,9 @@ if (useSimpleModel)
 
 if (!useSimpleModel)
 {
-    if (useSAMdgm)
-    {
-        source("estimator_complex.r")
-        num_min_prox_val <- 120
-        c_val <- 1
-    }
-
-    if (!useSAMdgm)
-    {
-        source("estimator.r")
-        num_min_prox_val <- 2
-    }
+    source("estimator_complex.r")
+    num_min_prox_val <- 120
+    c_val <- 1
 }
 
 max_cores <- 16
@@ -92,26 +84,27 @@ for (i_ss in 1:length(sample_sizes))
                 )
             }
 
-            if (!useSAMdgm)
+            if (useNonConstDgm)
             {
-                dgm <- dgm_trivariate_categorical_covariate(
-                    sample_size = sample_size, 
-                    total_T = num_dec_points, 
-                    time_window_for_Y = num_min_prox_val
+                dgm <- dgm_sam_non_const_rand(
+                    num_users = sample_size, 
+                    num_dec_points = num_dec_points, 
+                    num_min_prox = num_min_prox_val, 
+                    c_val = c_val
                 )
+        
+                beta_true <- c(dgm[['beta_10_true']], 
+                               dgm[['beta_11_true']], 
+                               dgm[['beta_20_true']], 
+                               dgm[['beta_21_true']])
 
-                dta <- dgm[['data']]
-
-                beta_true <- dgm[['beta_true']]
-
-                fit_e <- estimating_equation(
-                    dta = dta,
-                    time_window_for_Y = num_min_prox_val,
-                    control_varname = "S",
-                    miss_at_rand_varname = "S",
-                    moderator_varname = "X",
-                    avail_varname = NULL,
-                    missing_varname = NULL
+                fit_e <- estimating_equation_dgm_sam(
+                    dta = dgm, 
+                    M = M, 
+                    I = I, 
+                    num_min_prox = num_min_prox_val, 
+                    num_users = sample_size, 
+                    num_dec_points = num_dec_points
                 )
             }
         }
